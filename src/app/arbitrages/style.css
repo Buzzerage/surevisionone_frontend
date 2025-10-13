@@ -1,0 +1,456 @@
+/* ---------------------------------- */
+/* THEME & VARIABLES                  */
+/* ---------------------------------- */
+:root {
+    /* Variables de diseño */
+    --header-height: 60px;
+    --sidebar-width: 260px; /* Ancho un poco más grande para mejor espacio */
+    --border-radius-base: 8px;
+    
+    /* Modo Oscuro (Base) */
+    --color-background-primary: #0f172a;
+    --color-background-secondary: #1e293b;
+    --color-background-tertiary: #334155;
+    --color-card-bg: #1e293b;
+    --color-sidebar-bg: #1e293b;
+    --color-header-background: rgba(30, 41, 59, 0.95); /* Menos transparencia para fijo */
+    --color-border: rgba(55, 65, 81, 0.6);
+    --color-shadow: rgba(2, 6, 23, 0.7);
+    --color-text-primary: #e2e8f0;
+    --color-text-secondary: #94a3b8;
+    --color-text-accent: #f8fafc;
+    --color-accent-primary: #06b6d4;
+    --color-accent-secondary: #ec4899;
+    --color-green-text: #86efac;
+    --color-red-text: #fb7185;
+    --color-hover-bg: #334155; /* Renombrado */
+    --color-sport-active-bg: #0891b2;
+    --color-sport-active-text: #ffffff;
+    --color-bank-input-bg: #334155;
+    --color-bank-input-text: #a7f3d0;
+    --color-bank-input-border: #4b5563;
+    --color-subtle-bg: #293548;
+
+    /* Gradientes antiguos mapeados para consistencia */
+    --card-bg-gradient-start: rgba(30, 41, 59, 1);
+    --card-bg-gradient-end: rgba(24, 28, 34, 0.95);
+}
+
+/* ---------------------------------- */
+/* MODO CLARO - ¡MEJORAS APLICADAS!   */
+/* ---------------------------------- */
+[data-theme='light'] {
+    --color-background-primary: #f0f2f5; 
+    --color-background-secondary: #ffffff;
+    --color-background-tertiary: #e2e8f0;
+    --color-card-bg: #ffffff;
+    --color-sidebar-bg: #ffffff;
+    --color-header-background: rgba(255, 255, 255, 0.95);
+    --color-border: #e2e8f0;
+    --color-shadow: rgba(140, 152, 169, 0.15);
+    --color-text-primary: #1a202c;
+    --color-text-secondary: #718096;
+    --color-text-accent: #0f172a;
+    --color-accent-primary: #0891b2;
+    --color-accent-secondary: #d946ef;
+    --color-green-text: #2f855a;
+    --color-red-text: #c53030;
+    --color-hover-bg: #f7fafc;
+    --color-sport-active-bg: #06b6d4;
+    --color-sport-active-text: #ffffff;
+    --color-bank-input-bg: #f7fafc;
+    --color-bank-input-text: #2f855a;
+    --color-bank-input-border: #e2e8f0;
+    --color-subtle-bg: #f7fafc;
+
+    --card-bg-gradient-start: #ffffff;
+    --card-bg-gradient-end: #fafcff;
+}
+
+[data-theme='light'] body,
+[data-theme='light'] html {
+    background-color: var(--color-background-primary) !important; 
+    color: var(--color-text-primary) !important;
+}
+[data-theme='light'] .main-layout {
+    background-color: var(--color-background-primary);
+}
+
+/* ---------------------------------- */
+/* RESET & GLOBALES */
+/* ---------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { 
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; 
+    -webkit-font-smoothing: antialiased; 
+    -moz-osx-font-smoothing: grayscale; 
+    -webkit-text-size-adjust: 100%; 
+    transition: background-color 0.3s ease, color 0.3s ease; 
+}
+body { 
+    margin: 0; 
+    background-color: var(--color-background-primary); 
+    color: var(--color-text-primary); 
+    min-height: 100vh;
+}
+
+/* ---------------------------------- */
+/* LAYOUT PRINCIPAL Y RESPONSIVE */
+/* ---------------------------------- */
+
+/* 1. Cabecera Fija (AppHeader) */
+.app-header { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    height: var(--header-height);
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0 1.5rem; 
+    background-color: var(--color-header-background); 
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px); 
+    border-bottom: 1px solid var(--color-border); 
+    z-index: 1000;
+}
+
+/* 2. Layout Principal */
+.main-layout { 
+    display: flex; 
+    min-height: 100vh;
+    margin: 0 auto;
+    max-width: 1400px;
+    background-color: var(--color-background-primary); 
+    padding-top: var(--header-height);
+}
+
+/* 3. Área de Contenido */
+.content-area { 
+    flex-grow: 1;
+    display: flex; 
+    flex-direction: column; 
+    gap: 1.5rem; 
+    padding: 1.5rem;
+    margin-top: 0;
+    min-width: 0;
+}
+
+/* --- SIDEBAR Y FILTROS RESPONSIVE --- */
+
+/* Sidebar por defecto (Escritorio) */
+.sport-sidebar { 
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background-color: var(--color-sidebar-bg); 
+    border-radius: 0; 
+    padding: 1.5rem 1rem;
+    height: calc(100vh - var(--header-height));
+    position: sticky; 
+    top: var(--header-height); 
+    border-right: 1px solid var(--color-border); 
+    overflow-y: auto;
+    transition: transform 0.3s ease-out;
+}
+
+/* Ocultar el botón de alternancia en escritorio */
+.sport-filter-toggle { display: none; } 
+.main-nav { display: block; }
+
+/* Breakpoint para Tablet/Móvil (hasta 992px) */
+@media (max-width: 992px) { 
+    
+    /* 1. Ocultar sidebar por defecto */
+    .sport-sidebar {
+        position: fixed;
+        top: var(--header-height);
+        bottom: 0;
+        left: 0;
+        z-index: 900;
+        transform: translateX(calc(-1 * var(--sidebar-width)));
+        box-shadow: 2px 0 10px var(--color-shadow);
+        border-right: none;
+    }
+
+    /* 2. Mostrar cuando está abierto */
+    .sport-sidebar.open {
+        transform: translateX(0);
+    }
+
+    /* 3. Mostrar el botón de alternancia en la cabecera (MEJORA DE CONTRASTE) */
+    .sport-filter-toggle { 
+        display: flex; 
+        align-items: center;      /* ⬅️ AÑADIDO: Centrado vertical del icono */
+        justify-content: center;  /* ⬅️ AÑADIDO: Centrado horizontal del icono */
+        font-size: 1.5rem;
+        width: 40px; height: 40px; 
+        /* Usar colores de contraste fuerte para el botón en móvil */
+        background-color: var(--color-accent-primary); 
+        color: white; /* Color del icono siempre blanco */
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .sport-filter-toggle:hover {
+        background-color: #0ea5e9; 
+        color: white;
+    }
+    /* 4. Ocultar navegación principal */
+    .main-nav {
+        display: none;
+    }
+
+    /* 5. Fondo oscuro (Backdrop) */
+    .backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 850;
+    }
+    
+    /* AJUSTE DE ESPACIADO EN MÓVIL */
+    .content-area {
+        padding: 1rem; /* Padding más compacto */
+    }
+    .app-header {
+        padding: 0 1rem;
+    }
+    .panel-title {
+        font-size: 1.3rem; /* Título más pequeño en móvil */
+    }
+}
+
+/* --- ESTILOS DE COMPONENTES --- */
+
+/* Header & Nav */
+.header-left, .header-right { 
+    display: flex; 
+    align-items: center; /* ⬅️ Esto es clave y ya lo tenías, ¡genial! */
+    gap: 1rem; 
+}
+.app-logo { font-size: 1.6rem; font-weight: 800; margin: 0; color: var(--color-text-accent); }
+.theme-toggle-button { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; /* ⬅️ Esto asegura que el icono de sol/luna esté centrado */
+    width: 40px; height: 40px;  
+    background-color: var(--color-background-tertiary); color: var(--color-text-secondary); 
+    border: none; border-radius: 50%; cursor: pointer; font-size: 1.5rem; 
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease; 
+}
+.theme-toggle-button:hover { background-color: var(--color-accent-primary); color: white; transform: rotate(15deg) scale(1.1); }
+
+.nav-list { display: flex; gap: 1.5rem; list-style: none; margin: 0; padding: 0; }
+.nav-link { color: var(--color-text-secondary); text-decoration: none; font-weight: 600; font-size: 0.95rem; padding: 0.5rem 0; position: relative; border-bottom: 2px solid transparent; transition: color 0.2s ease, border-color 0.2s ease; }
+.nav-link:hover { color: var(--color-text-primary); }
+.nav-link--active { color: var(--color-accent-primary); border-bottom-color: var(--color-accent-primary); }
+
+/* Sidebar */
+.sidebar-title { font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding-left: 0.75rem; }
+.filter-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.sport-item { 
+    display: flex; align-items: center; width: 100%; padding: 0.65rem 0.75rem; 
+    background-color: transparent; border: none; border-radius: 6px; cursor: pointer; text-align: left; 
+    transition: background-color 0.2s, color 0.2s; font-size: 1rem; color: var(--color-text-primary); font-weight: 500; 
+}
+.sport-item:hover { background-color: var(--color-hover-bg); }
+.sport-item-active .sport-name { background-color: var(--color-sport-active-bg); color: var(--color-sport-active-text); font-weight: 700; }
+.sport-icon { font-size: 1.2rem; margin-right: 0.75rem; }
+
+/* Bank Control */
+.bank-control { 
+    padding: 1rem; 
+    background-color: var(--color-card-bg); 
+    border-radius: var(--border-radius-base); 
+    border: 1px solid var(--color-border); 
+    box-shadow: 0 6px 18px var(--color-shadow); 
+}
+.bank-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.bank-label { display: flex; gap: 0.5rem; align-items: center; font-size: 0.95rem; font-weight: 700; color: var(--color-text-accent); }
+.bank-wrapper { position: relative; max-width: 12rem; flex-grow: 1; }
+.bank-input { 
+    width: 100%; padding: 0.375rem 2.2rem 0.375rem 0.8rem; 
+    background: var(--color-bank-input-bg); color: var(--color-bank-input-text); font-weight: 800; 
+    border-radius: 0.6rem; border: 1px solid var(--color-bank-input-border); font-size: 1rem; 
+}
+.bank-input:focus { outline: none; border-color: var(--color-accent-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-primary) 20%, transparent); }
+.bank-currency { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--color-text-secondary); font-weight: 700; pointer-events: none; }
+
+/* Match & Cards */
+.arbitrage-panel { display: flex; flex-direction: column; gap: 1.5rem; }
+.panel-title { font-size: 1.5rem; color: var(--color-text-accent); margin: 0; padding-bottom: 0.5rem; border-bottom: 2px solid var(--color-border); }
+
+.match-container { 
+    display: flex; 
+    flex-direction: column; 
+    /* AUMENTO DE SEPARACIÓN ENTRE GRUPOS DE PARTIDOS */
+    gap: 1rem; 
+}
+/* NUEVO: Contenedor para la lista de tarjetas de arbitraje */
+.arb-list-container {
+    display: flex;
+    flex-direction: column;
+    /* Separación entre tarjetas individuales */
+    gap: 0.75rem; 
+}
+
+.match-header { padding: 0.75rem 1rem; background-color: var(--color-subtle-bg); border: 1px solid var(--color-border); border-left: 4px solid var(--color-accent-primary); border-radius: 0.5rem; }
+.match-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--color-text-accent); }
+.match-header p { margin: 0.25rem 0 0 0; font-size: 0.8rem; color: var(--color-text-secondary); font-weight: 500; }
+
+.arb-card { 
+    background: var(--color-card-bg); 
+    border: 1px solid var(--color-border); 
+    border-radius: 0.9rem; 
+    padding: 0.75rem; 
+    box-shadow: 0 10px 20px var(--color-shadow); 
+    transition: transform 220ms ease, box-shadow 220ms ease; 
+}
+.arb-card:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 15px 30px var(--color-shadow); 
+}
+
+/* Header de la tarjeta de arbitraje (arriba) */
+.arb-card-header { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding-bottom: 0.5rem; 
+    border-bottom: 1px solid var(--color-border); 
+    margin-bottom: 0.75rem; /* Añadir margen inferior aquí */
+}
+.arb-left { display: flex; gap: 0.5rem; align-items: center; }
+.arb-date { font-size: 0.78rem; color: var(--color-text-secondary); font-weight: 600; }
+
+/* AJUSTE CRÍTICO: Grid para las Bet Cards dentro de una ArbitrageCard */
+.arb-grid { 
+    display: grid; 
+    grid-template-columns: 1fr; /* Por defecto: siempre una columna en cualquier tamaño si no se especifica más */
+    gap: 0.6rem; 
+    /* Eliminado el margin-top de aquí, ya que el header tiene margin-bottom */
+}
+
+@media (min-width: 768px) { /* Tablet y superior */
+    /* Para Back vs Lay y Back vs Back, usar 2 columnas si el ancho lo permite */
+    .arb-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+    }
+}
+
+.arb-grid.single-bet-info {
+    grid-template-columns: 1fr;
+}
+
+
+/* Bet Info */
+.bet-card { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.35rem; 
+    padding: 0.75rem; 
+    border-radius: 0.6rem; 
+    background: var(--color-background-primary); 
+    border: 1px solid var(--color-border); 
+}
+
+/* Header de la Bet Card */
+.bet-header {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.2rem;
+}
+
+/* Fila del título (equipo/jugador) */
+.bet-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-grow: 1; 
+    min-width: 0; 
+    /* AJUSTE CRÍTICO: Reducir max-width o quitar para que flex-grow funcione mejor */
+    /* Lo quitamos y dejamos que flex-grow haga su trabajo, junto con min-width: 0 */
+    /* max-width: 60%; */ 
+}
+
+/* Título (nombre del equipo/jugador) */
+.bet-title { 
+    color: var(--color-text-accent); 
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis; 
+    /* AJUSTE: Eliminar margin-right que puede empujar si no hay suficiente espacio */
+    /* margin-right: 0.5rem; */ 
+}
+.bet-icon{ font-weight:900; font-size:1rem; line-height:1; }
+.bet-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0; 
+    white-space: nowrap; 
+}
+
+/* Cuota (Odds) */
+.bet-odds {
+    font-size: 1.2rem; 
+    font-weight: 900;
+    line-height: 1;
+    background:linear-gradient(90deg,#7dd3fc,var(--color-accent-primary)); 
+    -webkit-background-clip:text; 
+    -webkit-text-fill-color:transparent; 
+    animation: shimmer 4s linear infinite; 
+}
+.type-tag{ font-size:0.72rem; font-weight:700; padding:0.18rem 0.5rem; border-radius:999px; color:white; }
+.type-back{ background:linear-gradient(90deg,var(--color-accent-primary),#0ea5b5); }
+.type-lay{ background:linear-gradient(90deg,var(--color-accent-secondary),#f472b6); }
+
+.bet-footer{ 
+    display:flex; 
+    flex-wrap:wrap; 
+    align-items: center; 
+    justify-content: space-between; 
+    gap: 0.5rem 1rem; 
+    padding-top:0.5rem; 
+    border-top: 1px solid var(--color-border);
+    font-size:0.86rem; color: var(--color-text-secondary); 
+}
+.bookmaker-pill { background-color: var(--color-background-tertiary); color: var(--color-text-primary); padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.stake-value { color: var(--color-green-text); font-weight: 900; }
+.liability-value { color: var(--color-red-text); font-weight: 900; }
+.bet-icon-back { color: var(--color-accent-primary); }
+.bet-icon-lay { color: var(--color-accent-secondary); }
+
+/* --- BADGES (Colores consistentes con variables) --- */
+.profit-badge{ padding:0.125rem 0.5rem; font-size:0.75rem; font-weight:800; border-radius:999px; }
+/* Dark Mode */
+.profit-high{ background: rgba(16,185,129,0.12); color: var(--color-green-text); border:1px solid rgba(16,185,129,0.25); }
+.profit-medium{ background: rgba(245,158,11,0.12); color:#fde68a; border:1px solid rgba(245,158,11,0.26); }
+.profit-low{ background: rgba(239,68,68,0.12); color:#fecaca; border:1px solid rgba(239,68,68,0.26); }
+/* Light Mode Overrides */
+[data-theme='light'] .profit-high { background-color: #ecfdf5; color: #065f46; border: 1px solid #d1fae5; }
+[data-theme='light'] .profit-medium { background-color: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+[data-theme='light'] .profit-low { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fee2e2; }
+
+.new-badge{ 
+    padding:0.12rem 0.45rem; font-size:0.75rem; font-weight:800; border-radius:999px; 
+    background: rgba(79,70,229,0.12); color: #c7d2fe; border:1px solid rgba(99,102,241,0.22); 
+    animation: pulse 2.2s ease-in-out infinite; 
+}
+.no-arbs-message{ text-align:center; color: var(--color-text-secondary); margin-top:1.5rem; font-size:1rem; }
+
+/* --- ANIMACIONES --- */
+@keyframes fadeIn { from{ opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+.fade-in{ animation: fadeIn 360ms cubic-bezier(.2,.9,.3,1) both; }
+@keyframes pulse{ 0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(99,102,241,0.18); } 50%{ transform:scale(1.03); box-shadow:0 0 0 8px rgba(99,102,241,0.02); } 100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(99,102,241,0); } }
+@keyframes shimmer{ 0%{ background-position: -200% 0; } 100%{ background-position: 200% 0; } }
+@media (prefers-reduced-motion: reduce){ .fade-in, .new-badge, .bet-odds { animation: none !important; } * { transition: none !important; } }
