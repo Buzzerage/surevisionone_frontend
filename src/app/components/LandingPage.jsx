@@ -48,7 +48,7 @@ const Header = ({ theme, toggleTheme, onLogin, onLogout, user }) => {
     
     // Función de redirección simple (para el botón de arbitraje)
     const navigateToArbitrage = () => {
-        window.location.assign('/arbitrage');
+        window.location.assign('/arbitrages');
     };
 
     return (

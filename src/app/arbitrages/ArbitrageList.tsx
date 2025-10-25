@@ -20,10 +20,12 @@ import SportFilter from "./components/layout/SportFilter";
 import BankControl from "./components/ui/BankControl";
 import ArbitrageCard from "./components/cards/ArbitrageCard";
 
-import "./style.css"; // Estilos
+import "./style.css"; // Estilo
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_WS_BACKEND_URL;
 
 export default function ArbitrageList() {
-    const arbitrages: Arbitrage[] = useArbitrageWS("ws://10.0.0.102:8001/ws/arbitrages");
+    const arbitrages: Arbitrage[] = useArbitrageWS(BACKEND_URL);
     const [bank, setBank] = useState<number>(100);
     const [selectedSport, setSelectedSport] = useState<string>("All");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
