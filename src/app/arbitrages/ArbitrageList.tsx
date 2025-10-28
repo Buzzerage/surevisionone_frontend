@@ -13,7 +13,6 @@ import {
 import { SPORT_FILTERS } from "./utils/constants";
 
 // 🧩 Componentes
-import AppHeader from "./components/layout/AppHeader";
 import SportFilter from "./components/layout/SportFilter";
 import BankControl from "./components/ui/BankControl";
 import ArbitrageCard from "./components/cards/ArbitrageCard";
@@ -76,11 +75,6 @@ export default function ArbitrageList() {
 
   return (
     <>
-      <AppHeader
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-      />
-
       {isSidebarOpen && (
         <div
           className="backdrop"

@@ -1,9 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { X, Mail, Lock, Loader, CheckCircle } from "lucide-react";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL; // usa el nombre estándar
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function LoginModal({ onClose }) {
   const router = useRouter();
@@ -12,6 +12,24 @@ export default function LoginModal({ onClose }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loginSuccessful, setLoginSuccessful] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  // 🪄 Animación de entrada + bloqueo del scroll
+  useEffect(() => {
+    setVisible(true);
+    document.body.style.overflow = "hidden";
+    const handleEsc = (e) => e.key === "Escape" && handleClose();
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    setTimeout(() => onClose?.(), 300); // espera la animación
+  }, [onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,39 +54,27 @@ export default function LoginModal({ onClose }) {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // 🔥 MUY IMPORTANTE: envía cookies HTTP-only
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
-      // Manejo de errores HTTP
       if (!response.ok) {
-        let data = {};
-        try {
-          data = await response.json();
-        } catch (_) {
-          data = {};
-        }
-
-        if (response.status === 401) {
-          throw new Error(data.detail || "Correo o contraseña incorrectos.");
-        } else if (response.status === 400) {
-          throw new Error(data.detail || "Datos inválidos.");
+        const data = await response.json().catch(() => ({}));
+        let msg = data.detail || "Error al iniciar sesión.";
+        if (response.status === 401 || msg.includes("Invalid login credentials")) {
+          msg = "Correo o contraseña incorrectos.";
         } else if (response.status >= 500) {
-          throw new Error("Error en el servidor. Intenta de nuevo más tarde.");
-        } else {
-          throw new Error(data.detail || "Error desconocido al iniciar sesión.");
+          msg = "Error del servidor. Inténtalo de nuevo.";
         }
+        throw new Error(msg);
       }
 
-      // Si llega aquí → login correcto
       setLoginSuccessful(true);
-
       setTimeout(() => {
-        onClose?.(); // Cierra el modal
-        router.push("/arbitrages"); // Redirige al dashboard
+        onClose?.();
+        router.push("/arbitrages");
       }, 1500);
     } catch (err) {
-      console.error("❌ Error en login:", err);
       setError(err.message || "Error al conectar con el servidor.");
     } finally {
       setLoading(false);
@@ -79,24 +85,35 @@ export default function LoginModal({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70 backdrop-blur-sm"
-      onClick={isTransitioning ? (e) => e.stopPropagation() : onClose}
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${
+        visible
+          ? "bg-black/60 backdrop-blur-sm opacity-100"
+          : "opacity-0 pointer-events-none"
+      }`}
+      onClick={isTransitioning ? (e) => e.stopPropagation() : handleClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
-        className="w-full max-w-md p-8 rounded-xl bg-[var(--color-card-bg)] border border-[var(--color-border)] shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
+        className={`relative w-full max-w-md rounded-2xl shadow-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-8 transform transition-all duration-300 ease-out ${
+          visible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 -translate-y-10"
+        }`}
       >
         <button
-          onClick={onClose}
-          className={`absolute top-4 right-4 text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)] transition-colors ${isTransitioning ? "opacity-0 pointer-events-none" : ""}`}
+          onClick={handleClose}
+          className={`absolute top-4 right-4 text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)] transition-colors ${
+            isTransitioning ? "opacity-0 pointer-events-none" : ""
+          }`}
           disabled={isTransitioning}
         >
           <X className="w-6 h-6" />
         </button>
 
-        {/* 🔁 Pantalla de carga / éxito */}
         {isTransitioning ? (
-          <div className="flex flex-col items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-10">
             {loginSuccessful ? (
               <CheckCircle className="w-16 h-16 text-green-500 animate-in fade-in zoom-in" />
             ) : (
@@ -121,7 +138,7 @@ export default function LoginModal({ onClose }) {
                   placeholder="Correo electrónico"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
                 />
               </div>
 
@@ -133,18 +150,16 @@ export default function LoginModal({ onClose }) {
                   placeholder="Contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
                 />
               </div>
 
-              {/* Error message */}
               {error && (
-                <p className="text-center text-red-500 bg-red-100 rounded-lg py-2 px-2">
+                <p className="text-center text-red-500 bg-red-100/10 border border-red-500/30 rounded-lg py-2 px-2">
                   {error}
                 </p>
               )}
 
-              {/* Submit */}
               <button
                 type="submit"
                 className="w-full py-3 text-white rounded-lg bg-[var(--color-accent-primary)] hover:bg-[#0ea5e9] transition-colors font-semibold"

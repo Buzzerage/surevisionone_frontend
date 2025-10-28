@@ -21,7 +21,9 @@ export default function LogoutButton() {
         credentials: "include",
       });
     } catch (err) {
-      console.error("❌ Error cerrando sesión:", err);
+      /*if (process.env.NODE_ENV === "development") {
+        console.error("❌ Error en login:", err);
+      }*/
     } finally {
       setLoading(false);
       router.replace("/");

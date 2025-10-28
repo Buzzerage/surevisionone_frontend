@@ -40,30 +40,27 @@ const useTheme = () => {
     return { theme, toggleTheme };
 };
 
+
 // --------------------
 // Header (MODIFICADO)
 // --------------------
 const Header = ({ theme, toggleTheme, onLogin, onLogout, user }) => {
     const ThemeIcon = theme === 'dark' ? Sun : Moon;
-    
-    // Función de redirección simple (para el botón de arbitraje)
-    const navigateToArbitrage = () => {
-        window.location.assign('/arbitrages');
-    };
+
+    // Redirección al panel de arbitraje
+    const navigateToArbitrage = () => window.location.assign('/arbitrages');
 
     return (
         <header className="fixed top-0 left-0 w-full z-10 bg-[var(--color-background-primary)] shadow-md border-b border-[var(--color-border)]">
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                <span className="text-2xl font-bold text-[var(--color-accent-primary)] cursor-pointer"> ArbitrageFlow </span>
+                <span className="text-2xl font-bold text-[var(--color-accent-primary)] cursor-pointer">ArbitrageFlow</span>
                 <nav className="flex items-center space-x-4">
                     <a href="#features" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] transition-colors text-sm font-medium hidden md:block">Características</a>
                     <a href="#pricing" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] transition-colors text-sm font-medium hidden md:block">Precios</a>
                     
-                    {/* Botones Condicionales */}
+                    {/* 🔹 Botones condicionales */}
                     {user ? (
-                        // Opción 1: Usuario LOGUEADO
                         <div className="flex items-center space-x-3">
-                            {/* Botón Principal: IR AL ARBITRAJE (Verde) */}
                             <button 
                                 onClick={navigateToArbitrage} 
                                 className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] 
@@ -72,31 +69,32 @@ const Header = ({ theme, toggleTheme, onLogin, onLogout, user }) => {
                                 <TrendingUp className="w-5 h-5 mr-2" />
                                 <span>Ir a /Arbitraje</span>
                             </button>
-                            
-                            {/* Botón Secundario: CERRAR SESIÓN (Rojo explícito) */}
+
                             <button 
                                 onClick={onLogout} 
                                 className="inline-flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-colors 
                                            bg-red-600 text-white hover:bg-red-700 shadow-md"
-                                title="Cerrar Sesión"
                             >
                                 <LogOut className="w-4 h-4 mr-1.5" />
                                 <span>Salir</span>
                             </button>
                         </div>
                     ) : (
-                        // Opción 2: Usuario NO LOGUEADO
                         <button 
-                            onClick={onLogin} 
+                            onClick={() => window.dispatchEvent(new CustomEvent("open-login-modal"))}
                             className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors 
                                        bg-[var(--color-accent-primary)] text-white hover:bg-[#0ea5e9] shadow-md hover:shadow-lg" 
                         >
                             <LogIn className="w-4 h-4 mr-2" />
-                            <span>Iniciar Sesión</span>
+                            <span>Ir a tu cuenta</span>
                         </button>
                     )}
 
-                    <button onClick={toggleTheme} className="p-2 rounded-full bg-[var(--color-background-tertiary)] text-[var(--color-text-accent)] hover:bg-[var(--color-hover-bg)] transition-colors" aria-label="Toggle theme" >
+                    <button 
+                        onClick={toggleTheme} 
+                        className="p-2 rounded-full bg-[var(--color-background-tertiary)] text-[var(--color-text-accent)] hover:bg-[var(--color-hover-bg)] transition-colors"
+                        aria-label="Toggle theme"
+                    >
                         <ThemeIcon className="w-5 h-5" />
                     </button>
                 </nav>
@@ -104,6 +102,7 @@ const Header = ({ theme, toggleTheme, onLogin, onLogout, user }) => {
         </header>
     );
 };
+
 
 // ... el resto del componente LandingPage permanece inalterado.
 
@@ -195,6 +194,13 @@ export default function LandingPage({ onStartClick }) {
         }
     }, []);
 
+    useEffect(() => {
+        const openModal = () => setShowLoginModal(true);
+        window.addEventListener("open-login-modal", openModal);
+        return () => window.removeEventListener("open-login-modal", openModal);
+    }, []);
+
+
     // ACTUALIZADO: Manejadores para el modal y la autenticación
     const handleLogin = () => setShowLoginModal(true);
     const handleLogout = () => {
@@ -221,7 +227,13 @@ export default function LandingPage({ onStartClick }) {
     return (
         <div className="min-h-screen">
             {/* 1. Header con Login y Selector de Tema */}
-            <Header theme={theme} toggleTheme={toggleTheme} onLogin={handleLogin} onLogout={handleLogout} user={user} />
+            <Header
+                theme={theme}
+                toggleTheme={toggleTheme}
+                onLogin={handleLogin}
+                onLogout={handleLogout}
+                user={user}
+                />
 
             {/* ---------------------------------- */}
             {/* 2. SECCIÓN HERO (Primer pantallazo) */}
@@ -349,7 +361,7 @@ export default function LandingPage({ onStartClick }) {
 
             {/* 6. Modal de Inicio de Sesión / Registro */}
             {showLoginModal && (
-                <LoginModal onClose={handleCloseModal} onAuthSuccess={handleAuthSuccess} />
+                <LoginModal onClose={handleCloseModal} />
             )}
         </div>
     );
