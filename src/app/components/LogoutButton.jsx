@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Loader } from "lucide-react";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -12,7 +12,11 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await fetch(`${BACKEND_URL}/auth/logout`, {
+      if (!API_BASE_URL) {
+        throw new Error("No hay una URL de API configurada para cerrar la sesión.");
+      }
+
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
