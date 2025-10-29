@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import LandingPage from "./components/LandingPage";
+import LandingPage from "@/features/landing/LandingPage";
 // Importa ArbitragesPage si quieres alternar, si no, puedes dejar solo el LandingPage.
 // import ArbitragesPage from "./arbitrages/ArbitrageList"; 
 
