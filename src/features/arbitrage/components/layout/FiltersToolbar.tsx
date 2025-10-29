@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { FiFilter, FiRotateCw, FiChevronUp, FiChevronDown } from "react-icons/fi";
+import {
+    FiFilter,
+    FiRotateCw,
+    FiChevronUp,
+    FiChevronDown,
+    FiArrowLeftRight,
+} from "react-icons/fi";
 
 interface SelectOption {
     value: string;
@@ -22,6 +28,8 @@ interface FiltersToolbarProps {
     onSortOptionChange: (value: string) => void;
     onReset: () => void;
     hasActiveFilters: boolean;
+    bank: number;
+    onBankChange: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
@@ -38,6 +46,8 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     onSortOptionChange,
     onReset,
     hasActiveFilters,
+    bank,
+    onBankChange,
 }) => {
     const handleStep = (direction: "up" | "down") => {
         const current = Number.parseFloat(minProfit.replace(",", "."));
@@ -73,100 +83,175 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                 </button>
             </header>
 
-            <div className="filters-toolbar__grid">
-                <div className="filters-toolbar__group">
-                    <label htmlFor="filter-bookmaker" className="filters-toolbar__label">
-                        Casa de apuesta
-                    </label>
-                    <div className="filters-toolbar__control">
-                        <select
-                            id="filter-bookmaker"
-                            value={selectedBookmaker}
-                            onChange={(event) => onBookmakerChange(event.target.value)}
-                        >
-                            {bookmakerOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
+            <div className="filters-toolbar__body">
+                <div className="filters-toolbar__grid">
+                    <div className="filters-toolbar__group">
+                        <label htmlFor="filter-bookmaker" className="filters-toolbar__label">
+                            Casa de apuesta
+                        </label>
+                        <div className="filters-toolbar__control">
+                            <select
+                                id="filter-bookmaker"
+                                value={selectedBookmaker}
+                                onChange={(event) => onBookmakerChange(event.target.value)}
+                            >
+                                {bookmakerOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                <div className="filters-toolbar__group">
-                    <label htmlFor="filter-profit" className="filters-toolbar__label">
-                        Rentabilidad mínima (%)
-                    </label>
-                    <div className="filters-toolbar__control filters-toolbar__control--number">
-                        <input
-                            id="filter-profit"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            placeholder="Ej. 2.5"
-                            value={minProfit}
-                            onChange={(event) => onMinProfitChange(event.target.value)}
-                            onWheel={handleWheel}
-                        />
-                        <div className="filters-toolbar__steppers" role="group" aria-label="Ajustar rentabilidad mínima">
-                            <button
-                                type="button"
-                                className="filters-toolbar__stepper-button"
-                                onClick={() => handleStep("up")}
-                                aria-label="Incrementar rentabilidad mínima"
+                    <div className="filters-toolbar__group">
+                        <label htmlFor="filter-profit" className="filters-toolbar__label">
+                            Rentabilidad mínima (%)
+                        </label>
+                        <div className="filters-toolbar__control filters-toolbar__control--number">
+                            <input
+                                id="filter-profit"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="Ej. 2.5"
+                                value={minProfit}
+                                onChange={(event) => onMinProfitChange(event.target.value)}
+                                onWheel={handleWheel}
+                            />
+                            <div className="filters-toolbar__steppers" role="group" aria-label="Ajustar rentabilidad mínima">
+                                <button
+                                    type="button"
+                                    className="filters-toolbar__stepper-button"
+                                    onClick={() => handleStep("up")}
+                                    aria-label="Incrementar rentabilidad mínima"
+                                >
+                                    <FiChevronUp aria-hidden="true" />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="filters-toolbar__stepper-button"
+                                    onClick={() => handleStep("down")}
+                                    aria-label="Reducir rentabilidad mínima"
+                                >
+                                    <FiChevronDown aria-hidden="true" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="filters-toolbar__group">
+                        <label htmlFor="filter-bet-type" className="filters-toolbar__label">
+                            Tipo de arbitraje
+                        </label>
+                        <div className="filters-toolbar__control">
+                            <select
+                                id="filter-bet-type"
+                                value={betType}
+                                onChange={(event) => onBetTypeChange(event.target.value)}
                             >
-                                <FiChevronUp aria-hidden="true" />
-                            </button>
-                            <button
-                                type="button"
-                                className="filters-toolbar__stepper-button"
-                                onClick={() => handleStep("down")}
-                                aria-label="Reducir rentabilidad mínima"
+                                {betTypeOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="filters-toolbar__group">
+                        <label htmlFor="filter-sort" className="filters-toolbar__label">
+                            Ordenar por
+                        </label>
+                        <div className="filters-toolbar__control">
+                            <select
+                                id="filter-sort"
+                                value={sortOption}
+                                onChange={(event) => onSortOptionChange(event.target.value)}
                             >
-                                <FiChevronDown aria-hidden="true" />
-                            </button>
+                                {sortOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <div className="filters-toolbar__group">
-                    <label htmlFor="filter-bet-type" className="filters-toolbar__label">
-                        Tipo de arbitraje
-                    </label>
-                    <div className="filters-toolbar__control">
-                        <select
-                            id="filter-bet-type"
-                            value={betType}
-                            onChange={(event) => onBetTypeChange(event.target.value)}
-                        >
-                            {betTypeOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                <div className="filters-toolbar__divider" aria-hidden="true" />
 
-                <div className="filters-toolbar__group">
-                    <label htmlFor="filter-sort" className="filters-toolbar__label">
-                        Ordenar por
-                    </label>
-                    <div className="filters-toolbar__control">
-                        <select
-                            id="filter-sort"
-                            value={sortOption}
-                            onChange={(event) => onSortOptionChange(event.target.value)}
-                        >
-                            {sortOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
+                <aside className="filters-toolbar__aside" aria-label="Gestión de capital">
+                    <div className="filters-toolbar__aside-header">
+                        <span className="filters-toolbar__aside-icon" aria-hidden>
+                            💰
+                        </span>
+                        <div>
+                            <h3>Capital disponible</h3>
+                            <p>Usamos tu bank para calcular las apuestas sugeridas.</p>
+                        </div>
                     </div>
-                </div>
+                    <div className="filters-toolbar__bank-group">
+                        <label htmlFor="filter-bank" className="filters-toolbar__label">
+                            Capital (Bank)
+                        </label>
+                        <div className="filters-toolbar__bank-control">
+                            <input
+                                id="filter-bank"
+                                type="number"
+                                min={0}
+                                step={10}
+                                value={bank}
+                                onChange={(event) =>
+                                    onBankChange(
+                                        Math.max(0, Number.parseFloat(event.target.value) || 0)
+                                    )
+                                }
+                            />
+                            <span aria-hidden>€</span>
+                        </div>
+                        <p className="filters-toolbar__bank-helper">
+                            Ajusta este valor para adaptar el stake recomendado a tu capital.
+                        </p>
+                        <div className="filters-toolbar__bank-actions" role="group" aria-label="Ajustar capital">
+                            <button
+                                type="button"
+                                onClick={() => onBankChange(Math.max(0, bank - 10))}
+                                className="filters-toolbar__bank-button"
+                            >
+                                -10€
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onBankChange(bank + 10)}
+                                className="filters-toolbar__bank-button"
+                            >
+                                +10€
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onBankChange(bank + 50)}
+                                className="filters-toolbar__bank-button"
+                            >
+                                +50€
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onBankChange(bank + 100)}
+                                className="filters-toolbar__bank-button"
+                            >
+                                +100€
+                            </button>
+                        </div>
+                        <div className="filters-toolbar__bank-summary">
+                            <FiArrowLeftRight aria-hidden />
+                            <span>
+                                Combina los atajos rápidos con un valor manual para simular distintos escenarios de stake.
+                            </span>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </section>
     );

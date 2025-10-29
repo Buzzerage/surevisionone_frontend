@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { User, LogOut, Settings, Sun, Moon } from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import Logo from "@/components/common/Logo";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { supabase } from "@/lib/supabase/client";
 import { useThemeContext } from "@/providers/ThemeProvider";
 
@@ -40,8 +41,6 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const ThemeIcon = theme === "dark" ? Sun : Moon;
-
   return (
     <header className="sticky top-0 z-50 bg-[var(--color-background-primary)] border-b border-[var(--color-border)] shadow-sm">
       <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between relative">
@@ -49,13 +48,7 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
 
         <div className="flex items-center gap-4">
           {/* 🔹 Botón para cambiar tema */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full bg-[var(--color-background-secondary)] hover:bg-[var(--color-hover-bg)] transition-colors"
-            aria-label="Cambiar tema"
-          >
-            <ThemeIcon className="w-5 h-5 text-[var(--color-text-accent)]" />
-          </button>
+          <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
           {/* 🔹 Botón de usuario */}
           <div className="relative" ref={menuRef}>

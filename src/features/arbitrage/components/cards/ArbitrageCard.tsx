@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import BetInfo from "./BetInfo";
 import ProfitBadge from "../ui/ProfitBadge";
 import NewBadge from "../ui/NewBadge";
@@ -12,7 +12,33 @@ type ArbitrageCardProps = {
 };
 
 const ArbitrageCard = ({ arb, stakes, deltaState }: ArbitrageCardProps) => {
-  const isArbRecent = isRecent(arb.date_obtained, 1);
+  const [showNewBadge, setShowNewBadge] = useState(() =>
+    isRecent(arb.date_obtained, 1)
+  );
+
+  useEffect(() => {
+    const recent = isRecent(arb.date_obtained, 1);
+    setShowNewBadge(recent);
+
+    if (!recent) {
+      return undefined;
+    }
+
+    const obtainedAt = new Date(arb.date_obtained).getTime();
+    if (Number.isNaN(obtainedAt)) {
+      return undefined;
+    }
+    const expiryTime = obtainedAt + 60_000; // 1 minuto
+    const timeoutDelay = Math.max(0, expiryTime - Date.now());
+
+    const timer = window.setTimeout(() => {
+      setShowNewBadge(false);
+    }, timeoutDelay);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [arb.date_obtained]);
 
   // 🌀 Define clases dinámicas según el estado del delta
   const deltaClass =
@@ -31,7 +57,7 @@ const ArbitrageCard = ({ arb, stakes, deltaState }: ArbitrageCardProps) => {
       <div className="arb-card-header">
         <div className="arb-left">
           <ProfitBadge profit={arb.profit_percent} />
-          {isArbRecent && <NewBadge />}
+          {showNewBadge && <NewBadge />}
         </div>
         <div className="arb-date">{arb.date_obtained}</div>
       </div>

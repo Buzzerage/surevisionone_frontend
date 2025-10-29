@@ -224,21 +224,148 @@ body {
     flex-shrink: 0;
 }
 
-/* Bank Control */
-.bank-control {
+.filters-toolbar__body {
+    display: flex;
+    gap: 1.75rem;
+    align-items: stretch;
+}
+
+.filters-toolbar__divider {
+    width: 1px;
+    background: linear-gradient(
+        180deg,
+        transparent,
+        var(--color-border) 15%,
+        var(--color-border) 85%,
+        transparent
+    );
+}
+
+.filters-toolbar__aside {
+    flex: 0 0 270px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
     padding: 1rem;
-    background-color: var(--color-card-bg);
     border-radius: var(--border-radius-base);
     border: 1px solid var(--color-border);
-    box-shadow: 0 6px 18px var(--color-shadow);
+    background: var(--color-background-primary);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
-.bank-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.bank-label { display: flex; gap: 0.5rem; align-items: center; font-size: 0.95rem; font-weight: 700; color: var(--color-text-accent); }
-.bank-wrapper { position: relative; max-width: 12rem; flex-grow: 1; }
-.bank-input {
-    width: 100%; padding: 0.375rem 2.2rem 0.375rem 0.8rem;
-    background: var(--color-bank-input-bg); color: var(--color-bank-input-text); font-weight: 800;
-    border-radius: 0.6rem; border: 1px solid var(--color-bank-input-border); font-size: 1rem;
+
+.filters-toolbar__aside-header {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.filters-toolbar__aside-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text-accent);
+}
+
+.filters-toolbar__aside-header p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.filters-toolbar__aside-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.9rem;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(59, 130, 246, 0.08));
+    font-size: 1.35rem;
+}
+
+.filters-toolbar__bank-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.filters-toolbar__bank-control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-radius: 0.85rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-background-primary);
+    overflow: hidden;
+}
+
+.filters-toolbar__bank-control input {
+    flex: 1;
+    padding: 0.6rem 3rem 0.6rem 0.9rem;
+    background: transparent;
+    border: none;
+    color: var(--color-text-accent);
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.filters-toolbar__bank-control input:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.filters-toolbar__bank-control span {
+    position: absolute;
+    right: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    pointer-events: none;
+}
+
+.filters-toolbar__bank-helper {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.filters-toolbar__bank-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.filters-toolbar__bank-button {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--color-accent-primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.filters-toolbar__bank-button:hover {
+    background: rgba(59, 130, 246, 0.16);
+    border-color: rgba(59, 130, 246, 0.55);
+}
+
+.filters-toolbar__bank-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.filters-toolbar__bank-summary svg {
+    flex-shrink: 0;
 }
 
 /* Advanced Filters Toolbar */
@@ -391,6 +518,26 @@ body {
 }
 
 @media (max-width: 1200px) {
+    .filters-toolbar__body {
+        flex-direction: column;
+    }
+
+    .filters-toolbar__divider {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--color-border) 20%,
+            var(--color-border) 80%,
+            transparent
+        );
+    }
+
+    .filters-toolbar__aside {
+        flex: 1 1 auto;
+    }
+
     .filters-toolbar__grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -406,6 +553,14 @@ body {
         align-items: flex-start;
     }
 
+    .filters-toolbar__body {
+        gap: 1.25rem;
+    }
+
+    .filters-toolbar__aside {
+        padding: 0.9rem;
+    }
+
     .filters-toolbar__grid {
         grid-template-columns: 1fr;
     }
@@ -415,8 +570,6 @@ body {
         justify-content: center;
     }
 }
-.bank-input:focus { outline: none; border-color: var(--color-accent-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-primary) 20%, transparent); }
-.bank-currency { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--color-text-secondary); font-weight: 700; pointer-events: none; }
 
 /* Match & Cards */
 .arbitrage-panel { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -571,13 +724,13 @@ body {
 
 /* Cuota (Odds) */
 .bet-odds {
-    font-size: 1.2rem; 
+    font-size: 1.2rem;
     font-weight: 900;
     line-height: 1;
-    background:linear-gradient(90deg,#7dd3fc,var(--color-accent-primary)); 
-    -webkit-background-clip:text; 
-    -webkit-text-fill-color:transparent; 
-    animation: shimmer 4s linear infinite; 
+    background:linear-gradient(90deg,#7dd3fc,var(--color-accent-primary));
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation: shimmer 10s linear infinite;
 }
 .type-tag{ font-size:0.72rem; font-weight:700; padding:0.18rem 0.5rem; border-radius:999px; color:white; }
 .type-back{ background:linear-gradient(90deg,var(--color-accent-primary),#0ea5b5); }

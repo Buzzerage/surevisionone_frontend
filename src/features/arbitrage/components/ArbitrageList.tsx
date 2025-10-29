@@ -16,7 +16,6 @@ import {
 } from "../utils/constants";
 import SportFilter from "./layout/SportFilter";
 import FiltersToolbar from "./layout/FiltersToolbar";
-import BankControl from "./ui/BankControl";
 import ArbitrageCard from "./cards/ArbitrageCard";
 import type { Arbitrage, StakeResult } from "../utils/types";
 
@@ -330,8 +329,6 @@ export default function ArbitrageList() {
         />
 
         <main className="content-area">
-          <BankControl bank={bank} setBank={setBank} />
-
           <FiltersToolbar
             bookmakerOptions={bookmakerOptions}
             selectedBookmaker={selectedBookmaker}
@@ -346,6 +343,8 @@ export default function ArbitrageList() {
             onSortOptionChange={setSortOption}
             onReset={handleResetFilters}
             hasActiveFilters={hasActiveFilters}
+            bank={bank}
+            onBankChange={setBank}
           />
 
           <div className="arbitrage-panel">
