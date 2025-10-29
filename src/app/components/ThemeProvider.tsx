@@ -1,36 +1,34 @@
-// src/components/ThemeProvider.tsx
 "use client";
-
-import React, { createContext, useContext } from "react";
-// Asumo que useTheme se encuentra en este path:
-import { useTheme } from "../arbitrages/hooks/useTheme"; 
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 type ThemeContextType = {
-    theme: string;
-    toggleTheme: () => void;
+  theme: "dark" | "light";
+  toggleTheme: () => void;
 };
 
-// 1. Crear el Contexto
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// 2. Hook personalizado para consumir el Contexto
 export const useThemeContext = () => {
-    const context = useContext(ThemeContext);
-    if (context === undefined) {
-        // Esto asegura que el hook solo se use dentro del proveedor
-        throw new Error("useThemeContext must be used within a ThemeProvider");
-    }
-    return context;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useThemeContext must be used within ThemeProvider");
+  return ctx;
 };
 
-// 3. El Componente Proveedor
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-    // ⚠️ Ejecución del hook para aplicar el data-theme al <html>
-    const { theme, toggleTheme } = useTheme();
+  const [theme, setTheme] = useState<"dark" | "light">(
+    (typeof window !== "undefined" && (localStorage.getItem("theme") as "dark" | "light")) || "dark"
+  );
 
-    return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
-            {children}
-        </ThemeContext.Provider>
-    );
+  useEffect(() => {
+    document.body.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }

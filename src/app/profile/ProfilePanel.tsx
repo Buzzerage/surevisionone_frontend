@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
 
 import LogoutButton from "../components/LogoutButton";
-import ThemeToggle from "../arbitrages/components/ui/ThemeToggle";
-import { useThemeContext } from "../components/ThemeProvider";
 import ProfileCard from "./components/ProfileCard";
 import PasswordForm, { type PasswordFormValues } from "./components/PasswordForm";
 import StatusBanner from "./components/StatusBanner";
@@ -29,7 +27,6 @@ type ProfilePanelProps = {
 
 const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const router = useRouter();
-  const { theme, toggleTheme } = useThemeContext();
 
   const [formValues, setFormValues] = useState<PasswordFormValues>(emptyForm);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -212,21 +209,43 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden w-1/3 bg-[radial-gradient(circle_at_top,rgba(217,70,239,0.18),transparent_65%)] opacity-40 lg:block" />
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-12">
         <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(135deg,var(--card-bg-gradient-start),var(--card-bg-gradient-end))] px-6 py-6 shadow-[0_30px_60px_-35px_var(--color-card-glow)] backdrop-blur">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-text-secondary)]">
-              Panel del usuario
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-accent)] sm:text-4xl">
-              Tu perfil
-            </h1>
-            <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-text-secondary)]">
-              Administra la información asociada a tu cuenta, ajusta la seguridad y revisa el estado de tu suscripción.
-            </p>
-          </div>
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-[var(--color-border)] bg-[var(--color-background-secondary)] p-2 shadow-inner shadow-black/10">
-              <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+            {/* 🔙 Botón de retroceso */}
+            <button
+              onClick={() => router.push("/arbitrages")}
+              className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-accent)] transition-all hover:bg-[var(--color-hover-bg)] hover:scale-[1.03]"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Volver
+            </button>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-text-secondary)]">
+                Panel del usuario
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-accent)] sm:text-4xl">
+                Tu perfil
+              </h1>
+              <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                Administra la información asociada a tu cuenta, ajusta la seguridad y revisa el estado de tu suscripción.
+              </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
             <LogoutButton />
           </div>
         </header>

@@ -4,37 +4,50 @@ import { useState, useEffect } from "react";
 import { supabase } from "../components/supabaseClient";
 
 /**
- * Hook que mantiene el estado de sesión sincronizado con Supabase Auth.
- * Detecta login/logout en tiempo real y devuelve el objeto de sesión.
+ * Hook unificado para manejar autenticación y sesión de usuario con Supabase.
+ * Sustituye completamente a los antiguos useAuthSession y useSupabaseSession.
  */
 export function useSupabaseSession() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
 
   useEffect(() => {
-    const getSession = async () => {
-        const { data } = await supabase.auth.getSession();
-        const s = data?.session ?? null;
+    const init = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
 
-        if (s?.user) {
-        setSession(s);
-        } else {
-        // 💡 Limpia token caducado o corrupto
-        document.cookie =
-            "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        setSession(null);
-        }
-
+        const currentSession = data?.session ?? null;
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+      } catch (err) {
+        console.error("❌ Error obteniendo sesión Supabase:", err);
+        setError(err);
+      } finally {
         setLoading(false);
+      }
     };
-    getSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-        setSession(newSession ?? null);
+    init();
+
+    // 🔁 Listener en tiempo real para login/logout/token refresh
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      
+      if (newSession) {
+        setSession(newSession);
+        setUser(newSession.user);
+      } else {
+        setSession(null);
+        setUser(null);
+      }
     });
 
-    return () => listener.subscription.unsubscribe();
-    }, []);
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
-  return { session, loading };
+  return { session, user, loading, error };
 }

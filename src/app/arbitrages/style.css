@@ -1,7 +1,7 @@
 /* ---------------------------------- */
 /* THEME & VARIABLES                  */
 /* ---------------------------------- */
-:root {
+:root, [data-theme='dark']{
     /* Variables de diseño */
     --header-height: 60px;
     --sidebar-width: 260px; /* Ancho un poco más grande para mejor espacio */
@@ -495,14 +495,19 @@ body {
 @keyframes shimmer{ 0%{ background-position: -200% 0; } 100%{ background-position: 200% 0; } }
 @media (prefers-reduced-motion: reduce){ .fade-in, .new-badge, .bet-odds { animation: none !important; } * { transition: none !important; } }
 
-/* 🔄 Spinner de carga */
+/* ---------------------------------- */
+/* ESTADO DE CARGA Y ANIMACIONES LIMPIAS */
+/* ---------------------------------- */
+
+/* Loader giratorio minimalista (usado en botones o pequeños elementos) */
 .loader {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #38bdf8;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--color-accent-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  margin: 0 auto;
 }
 
 @keyframes spin {
@@ -511,18 +516,260 @@ body {
   }
 }
 
-/* ✨ Animación de entrada */
+/* ---------------------------------- */
+/* TARJETAS DE CARGA (PLACEHOLDERS) */
+/* ---------------------------------- */
+.loading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+.loading-card {
+  position: relative;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 6px 18px var(--color-shadow);
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 0.85rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(
+    100deg,
+    var(--color-background-secondary) 30%,
+    rgba(255, 255, 255, 0.05) 40%,
+    var(--color-background-secondary) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+  margin-bottom: 0.75rem;
+}
+
+.loading-bar:last-child {
+  margin-bottom: 0;
+}
+
+/* ✨ Efecto shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ---------------------------------- */
+/* ANIMACIÓN DE ENTRADA (GENÉRICA) */
+/* ---------------------------------- */
 .fade-in {
-  animation: fadeIn 0.4s ease-in-out;
+  animation: fadeIn 0.35s ease-in-out both;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ---------------------------------- */
+/* TEXTO Y CONTENEDOR DE ESTADO VACÍO */
+/* ---------------------------------- */
+.loading-wrapper {
+  text-align: center;
+  margin-top: 3rem;
+  color: var(--color-text-secondary);
+}
+
+.loading-wrapper h2 {
+  font-size: 1.2rem;
+  color: var(--color-text-accent);
+  margin-bottom: 1.5rem;
+}
+
+/* ---------------------------------- */
+/* OVERLAY DE CARGA SUPERPUESTO (FADE IN / OUT) */
+/* ---------------------------------- */
+
+.loading-overlay {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  width: 100%;
+  height: calc(100vh - var(--header-height));
+  background: rgba(15, 23, 42, 0.6); /* semitransparente */
+  backdrop-filter: blur(4px); /* desenfoque elegante */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Estado inicial (fade-in) */
+.loading-overlay.fade-in {
+  opacity: 1;
+}
+
+/* Estado de salida (fade-out) */
+.loading-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none; /* Evita bloquear clics al desvanecerse */
+}
+
+/* Título */
+.loading-overlay h2 {
+  color: var(--color-text-accent);
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+/* Tarjetas de carga */
+.loading-overlay .loading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem;
+  max-width: 1000px;
+  width: 100%;
+  padding: 0 2rem;
+}
+
+.loading-overlay .loading-card {
+  position: relative;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.loading-overlay .loading-bar {
+  height: 0.8rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(
+    100deg,
+    var(--color-background-secondary) 30%,
+    rgba(255, 255, 255, 0.08) 45%,
+    var(--color-background-secondary) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+  margin-bottom: 0.6rem;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -150px 0;
+  }
+  100% {
+    background-position: 150px 0;
+  }
+}
+
+/* --------------------------------------------------------- */
+/* 🎯 ANIMACIONES DE ACTUALIZACIÓN DE ARBITRAJES EN TIEMPO REAL */
+/* --------------------------------------------------------- */
+
+@keyframes fadePulseNew {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes fadePulseUpdated {
+  0%   { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+}
+
+/* Mantener el fondo estable */
+.highlight-new,
+.highlight-updated {
+  background-color: var(--color-card-bg) !important;
+}
+
+
+.highlight-new {
+  animation: fadePulseNew 1.4s ease-in-out;
+}
+
+.highlight-updated {
+  animation: fadePulseUpdated 1.4s ease-in-out;
+}
+
+.arbitrage-card {
+  transition: all 0.25s ease;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: var(--color-card-bg);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+
+/* ------------------------------------------- */
+/* 🔥 ANIMACIONES DE DELTAS EN ARBITRAGES */
+/* ------------------------------------------- */
+
+@keyframes fadePulseNew {
+  0%   { background-color: rgba(34, 197, 94, 0.3); }  /* verde */
+  100% { background-color: transparent; }
+}
+
+@keyframes fadePulseUpdated {
+  0%   { background-color: rgba(250, 204, 21, 0.3); } /* amarillo */
+  100% { background-color: transparent; }
+}
+
+/* 💥 Animación de entrada “slide-in bounce” */
+@keyframes slideInBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(25px) scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ✨ Pulsación suave para actualizaciones */
+@keyframes pulseFade {
+  0% { background-color: rgba(250, 204, 21, 0.25); }
+  50% { background-color: rgba(250, 204, 21, 0.1); }
+  100% { background-color: transparent; }
+}
+
+/* Asignación de animaciones */
+.highlight-new {
+  animation: fadePulseNew 1s ease-in-out, slideInBounce 0.6s ease;
+}
+
+.highlight-updated {
+  animation: fadePulseUpdated 1.5s ease-in-out, pulseFade 2s ease-in-out;
+}
+
+/* Base card transition */
+.arb-card {
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }

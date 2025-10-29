@@ -1,27 +1,23 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import useArbitrageRealtime from "./hooks/useArbitrageRealtime";
 
-// 🧠 Hooks
-import useArbitrageWS from "./hooks/useArbitrageWS";
 import {
   calculateBackVsBackStakes,
   calculateBackVsLayStakes,
 } from "./hooks/useStakes";
 
-// ⚙️ Utilidades
 import { SPORT_FILTERS } from "./utils/constants";
-
-// 🧩 Componentes
 import SportFilter from "./components/layout/SportFilter";
 import BankControl from "./components/ui/BankControl";
 import ArbitrageCard from "./components/cards/ArbitrageCard";
-
 import "./style.css";
 
 export default function ArbitrageList() {
-  const { arbitrages, status } = useArbitrageWS();
-
+  const { arbitrages, status, lastDelta } = useArbitrageRealtime();
+  const [showOverlay, setShowOverlay] = useState(true);
+  const [fadeClass, setFadeClass] = useState("fade-in");
   const [bank, setBank] = useState<number>(100);
   const [selectedSport, setSelectedSport] = useState<string>("All");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -38,17 +34,27 @@ export default function ArbitrageList() {
         return { stakeBack: stake1, stakeLay: stake2, liabilityLay: liability2 };
       }
       if (arb.type === "Back vs Back") {
-        const { stake1, stake2 } = calculateBackVsBackStakes(
-          bank,
-          arb.back_odds || 0,
-          arb.lay_odds || 0
-        );
+        const homeOdds = arb.home?.odds ?? 0;
+        const awayOdds = arb.away?.odds ?? 0;
+        const { stake1, stake2 } = calculateBackVsBackStakes(bank, homeOdds, awayOdds);
         return { stakeHome: stake1, stakeAway: stake2 };
       }
       return {};
     },
     [bank]
   );
+
+  // 🧭 Control de overlay de carga
+  useEffect(() => {
+    if (status === "open" && arbitrages.length > 0) {
+      setFadeClass("fade-out");
+      const timer = setTimeout(() => setShowOverlay(false), 300);
+      return () => clearTimeout(timer);
+    } else if (status === "connecting") {
+      setShowOverlay(true);
+      setFadeClass("fade-in");
+    }
+  }, [status, arbitrages]);
 
   // 🧩 Filtrado por deporte
   const filteredArbitrages = useMemo(() => {
@@ -72,6 +78,31 @@ export default function ArbitrageList() {
   const hasArbitrages = filteredArbitrages.length > 0;
   const currentSportName =
     SPORT_FILTERS.find((f) => f.key === selectedSport)?.name || selectedSport;
+
+  // 🌀 Tarjeta animada de carga
+  const LoadingCard = () => (
+    <div className="match-container fade-in">
+      <div className="match-header shimmer">
+        <div className="h-5 w-2/3 bg-gray-700 rounded mb-2"></div>
+        <div className="h-3 w-1/3 bg-gray-700 rounded"></div>
+      </div>
+      <div className="arb-list-container">
+        {[...Array(2)].map((_, i) => (
+          <div
+            key={i}
+            className="arbitrage-card shimmer rounded-xl border border-gray-700 bg-gray-800 p-4 shadow-md animate-pulse"
+          >
+            <div className="h-4 bg-gray-600 rounded w-3/4 mb-3"></div>
+            <div className="h-3 bg-gray-700 rounded w-1/2 mb-2"></div>
+            <div className="h-3 bg-gray-700 rounded w-1/3"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // 🔍 Determina si mostrar loader o mensaje vacío
+  const isLoading = status === "connecting" || (status === "open" && arbitrages.length === 0);
 
   return (
     <>
@@ -100,7 +131,16 @@ export default function ArbitrageList() {
               {selectedSport !== "All" ? `en ${currentSportName}` : ""}
             </h2>
 
-            {!hasArbitrages && (
+            {isLoading && (
+              <div className="text-center text-gray-400 mt-10">
+                <LoadingCard />
+                <p className="mt-6 text-sm opacity-70">
+                  Cargando arbitrajes en tiempo real...
+                </p>
+              </div>
+            )}
+
+            {!isLoading && !hasArbitrages && (
               <p className="no-arbs-message">
                 No hay oportunidades de arbitraje disponibles{" "}
                 {selectedSport !== "All"
@@ -128,6 +168,13 @@ export default function ArbitrageList() {
                         key={arb.id_arb}
                         arb={arb}
                         stakes={stakes}
+                        deltaState={
+                          lastDelta?.new?.includes(arb.id_arb)
+                            ? "new"
+                            : lastDelta?.updated?.includes(arb.id_arb)
+                            ? "updated"
+                            : undefined
+                        }
                       />
                     );
                   })}
@@ -137,6 +184,14 @@ export default function ArbitrageList() {
           </div>
         </main>
       </div>
+
+      {showOverlay && status === "connecting" && (
+        <div className={`loading-overlay ${fadeClass}`}>
+          <h2 style={{ color: "var(--color-text-accent)", marginBottom: "1.5rem" }}>
+            Cargando arbitrajes...
+          </h2>
+        </div>
+      )}
     </>
   );
 }

@@ -2,12 +2,12 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import useAuthSession from "../hooks/useAuthSession";
+import { useSupabaseSession } from "../hooks/useSupabaseSession";
 import ProfilePanel from "./ProfilePanel";
 
 const ProfilePage = () => {
   const router = useRouter();
-  const { user, loading } = useAuthSession();
+  const { user, loading } = useSupabaseSession();
 
   useEffect(() => {
     if (!loading && !user) {

@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ArbitrageList from "./ArbitrageList";
-import useAuthSession from "../hooks/useAuthSession";
+import { useSupabaseSession } from "../hooks/useSupabaseSession";
 
 export default function ArbitragesPage() {
   const router = useRouter();
-  const { user, loading } = useAuthSession();
+  const { user, loading } = useSupabaseSession();
 
   // 🔁 Redirige solo cuando termina de cargar y no hay sesión
   useEffect(() => {
