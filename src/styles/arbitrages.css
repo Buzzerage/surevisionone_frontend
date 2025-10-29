@@ -184,20 +184,156 @@ body {
 .sport-icon { font-size: 1.2rem; margin-right: 0.75rem; }
 
 /* Bank Control */
-.bank-control { 
-    padding: 1rem; 
-    background-color: var(--color-card-bg); 
-    border-radius: var(--border-radius-base); 
-    border: 1px solid var(--color-border); 
-    box-shadow: 0 6px 18px var(--color-shadow); 
+.bank-control {
+    padding: 1rem;
+    background-color: var(--color-card-bg);
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 6px 18px var(--color-shadow);
 }
 .bank-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .bank-label { display: flex; gap: 0.5rem; align-items: center; font-size: 0.95rem; font-weight: 700; color: var(--color-text-accent); }
 .bank-wrapper { position: relative; max-width: 12rem; flex-grow: 1; }
-.bank-input { 
-    width: 100%; padding: 0.375rem 2.2rem 0.375rem 0.8rem; 
-    background: var(--color-bank-input-bg); color: var(--color-bank-input-text); font-weight: 800; 
-    border-radius: 0.6rem; border: 1px solid var(--color-bank-input-border); font-size: 1rem; 
+.bank-input {
+    width: 100%; padding: 0.375rem 2.2rem 0.375rem 0.8rem;
+    background: var(--color-bank-input-bg); color: var(--color-bank-input-text); font-weight: 800;
+    border-radius: 0.6rem; border: 1px solid var(--color-bank-input-border); font-size: 1rem;
+}
+
+/* Advanced Filters Toolbar */
+.filters-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    background-color: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 8px 22px var(--color-shadow);
+}
+
+.filters-toolbar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.filters-toolbar__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text-accent);
+}
+
+.filters-toolbar__title svg {
+    font-size: 1.25rem;
+}
+
+.filters-toolbar__reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: var(--color-hover-bg);
+    color: var(--color-text-secondary);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.filters-toolbar__reset:hover:not(:disabled) {
+    background: var(--color-accent-primary);
+    color: white;
+    border-color: transparent;
+}
+
+.filters-toolbar__reset:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.filters-toolbar__grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.filters-toolbar__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.filters-toolbar__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.02em;
+}
+
+.filters-toolbar__control {
+    position: relative;
+}
+
+.filters-toolbar__control select,
+.filters-toolbar__control input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filters-toolbar__control select:focus,
+.filters-toolbar__control input:focus {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
+    outline: none;
+}
+
+.filters-toolbar__control--number input::-webkit-outer-spin-button,
+.filters-toolbar__control--number input::-webkit-inner-spin-button {
+    margin: 0;
+}
+
+.filters-toolbar__control--number input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+@media (max-width: 1200px) {
+    .filters-toolbar__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .filters-toolbar {
+        padding: 1rem;
+    }
+
+    .filters-toolbar__header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filters-toolbar__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filters-toolbar__reset {
+        align-self: stretch;
+        justify-content: center;
+    }
 }
 .bank-input:focus { outline: none; border-color: var(--color-accent-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-primary) 20%, transparent); }
 .bank-currency { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--color-text-secondary); font-weight: 700; pointer-events: none; }

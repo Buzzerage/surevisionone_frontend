@@ -1,19 +1,26 @@
 // src/components/layout/SportFilter.tsx
 import React from "react";
-import { SPORT_FILTERS } from "../../utils/constants";
+import type { SportFilterOption } from "../../utils/constants";
 
-type SportFilterProps = {
+interface SportFilterProps {
     selectedSport: string;
     setSelectedSport: (sport: string) => void;
     isSidebarOpen: boolean;
     setIsSidebarOpen: (isOpen: boolean) => void;
-};
+    sports: SportFilterOption[];
+}
 
-const SportFilter = ({ selectedSport, setSelectedSport, isSidebarOpen, setIsSidebarOpen }: SportFilterProps) => {
+const SportFilter = ({
+    selectedSport,
+    setSelectedSport,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    sports,
+}: SportFilterProps) => {
     const handleSelectSport = (sportKey: string) => {
         setSelectedSport(sportKey);
         // Cierra la sidebar después de seleccionar un deporte en móvil
-        if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+        if (typeof window !== "undefined" && window.innerWidth <= 768) {
             setIsSidebarOpen(false);
         }
     };
@@ -22,7 +29,7 @@ const SportFilter = ({ selectedSport, setSelectedSport, isSidebarOpen, setIsSide
         <aside id="sport-sidebar" className={`sport-sidebar ${isSidebarOpen ? "open" : ""}`}>
             <h3 className="sidebar-title">FILTRAR DEPORTES</h3>
             <div className="filter-list">
-                {SPORT_FILTERS.map((sport) => {
+                {sports.map((sport) => {
                     const Icon = sport.icon;
                     const isActive = selectedSport === sport.key;
                     return (

@@ -8,21 +8,41 @@ import {
   calculateBackVsLayStakes,
 } from "../hooks/useStakes";
 
-import { SPORT_FILTERS } from "../utils/constants";
+import {
+  ALL_SPORT_FILTER_KEY,
+  BASE_SPORT_FILTERS,
+  resolveSportFilterOption,
+  type SportFilterOption,
+} from "../utils/constants";
 import SportFilter from "./layout/SportFilter";
+import FiltersToolbar from "./layout/FiltersToolbar";
 import BankControl from "./ui/BankControl";
 import ArbitrageCard from "./cards/ArbitrageCard";
 import type { Arbitrage, StakeResult } from "../utils/types";
+
+type SelectOption = { value: string; label: string };
+
+const DEFAULT_SORT = "profit-desc";
+
+const matchLabel = (arb: Arbitrage) => `${arb.home_team} vs ${arb.away_team}`;
+
+const getArbitrageKey = (arb: Arbitrage) =>
+  `${arb.home_team} vs ${arb.away_team} @ ${arb.match_date}`;
+
+const collator = new Intl.Collator("es", { sensitivity: "base" });
 
 export default function ArbitrageList() {
   const { arbitrages, status, lastDelta } = useArbitrageRealtime();
   const [showOverlay, setShowOverlay] = useState(true);
   const [fadeClass, setFadeClass] = useState("fade-in");
   const [bank, setBank] = useState<number>(100);
-  const [selectedSport, setSelectedSport] = useState<string>("All");
+  const [selectedSport, setSelectedSport] = useState<string>(ALL_SPORT_FILTER_KEY);
+  const [selectedBookmaker, setSelectedBookmaker] = useState<string>("All");
+  const [minProfit, setMinProfit] = useState<string>("");
+  const [betType, setBetType] = useState<string>("ALL");
+  const [sortOption, setSortOption] = useState<string>(DEFAULT_SORT);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // 🧮 Cálculo de stakes adaptado a tus datos reales
   const calculateStakes = useCallback(
     (arb: Arbitrage): StakeResult => {
       if (arb.type === "Back vs Lay") {
@@ -40,42 +60,202 @@ export default function ArbitrageList() {
     [bank]
   );
 
-  // 🧭 Control de overlay de carga
   useEffect(() => {
     if (status === "open" && arbitrages.length > 0) {
       setFadeClass("fade-out");
       const timer = setTimeout(() => setShowOverlay(false), 300);
       return () => clearTimeout(timer);
-    } else if (status === "connecting") {
+    }
+
+    if (status === "connecting") {
       setShowOverlay(true);
       setFadeClass("fade-in");
     }
+
+    return () => undefined;
   }, [status, arbitrages]);
 
-  // 🧩 Filtrado por deporte
-  const filteredArbitrages = useMemo(() => {
-    if (selectedSport === "All") return arbitrages;
-    const sportKey = selectedSport.toLowerCase();
-    return arbitrages.filter((arb) =>
-      arb.sport_key?.toLowerCase().includes(sportKey)
+  const sportOptions = useMemo(() => {
+    const options = new Map<string, SportFilterOption>();
+    options.set(ALL_SPORT_FILTER_KEY, BASE_SPORT_FILTERS[0]);
+
+    arbitrages.forEach((arb) => {
+      const option = resolveSportFilterOption(arb.sport_key, arb.sport);
+      if (!options.has(option.key)) {
+        options.set(option.key, option);
+      }
+    });
+
+    return Array.from(options.values());
+  }, [arbitrages]);
+
+  useEffect(() => {
+    if (!sportOptions.some((option) => option.key === selectedSport)) {
+      setSelectedSport(ALL_SPORT_FILTER_KEY);
+    }
+  }, [sportOptions, selectedSport]);
+
+  const activeSportOption = useMemo(
+    () =>
+      sportOptions.find((option) => option.key === selectedSport) ??
+      BASE_SPORT_FILTERS[0],
+    [sportOptions, selectedSport]
+  );
+
+  const bookmakerOptions = useMemo<SelectOption[]>(() => {
+    const set = new Set<string>();
+
+    arbitrages.forEach((arb) => {
+      [
+        arb.back_bookmaker,
+        arb.lay_bookmaker,
+        arb.home?.bookmaker,
+        arb.away?.bookmaker,
+      ]
+        .filter(Boolean)
+        .forEach((bookmaker) => set.add((bookmaker as string).trim()));
+    });
+
+    const sorted = Array.from(set).sort((a, b) =>
+      collator.compare(a.toLowerCase(), b.toLowerCase())
     );
-  }, [arbitrages, selectedSport]);
 
-  // 🔗 Agrupación por partido
+    return [
+      { value: "All", label: "Todas las casas" },
+      ...sorted.map((value) => ({ value, label: value })),
+    ];
+  }, [arbitrages]);
+
+  useEffect(() => {
+    if (!bookmakerOptions.some((option) => option.value === selectedBookmaker)) {
+      setSelectedBookmaker("All");
+    }
+  }, [bookmakerOptions, selectedBookmaker]);
+
+  const betTypeOptions = useMemo<SelectOption[]>(() => {
+    const set = new Set<string>();
+    arbitrages.forEach((arb) => {
+      if (arb.type) {
+        set.add(arb.type);
+      }
+    });
+
+    const sorted = Array.from(set).sort((a, b) => collator.compare(a, b));
+
+    return [
+      { value: "ALL", label: "Todos los tipos" },
+      ...sorted.map((value) => ({ value, label: value })),
+    ];
+  }, [arbitrages]);
+
+  const sortOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: "profit-desc", label: "Rentabilidad (mayor a menor)" },
+      { value: "profit-asc", label: "Rentabilidad (menor a mayor)" },
+      { value: "match-az", label: "Partido (A-Z)" },
+      { value: "match-za", label: "Partido (Z-A)" },
+    ],
+    []
+  );
+
+  const hasActiveFilters = useMemo(() => {
+    const hasBookmaker = selectedBookmaker !== "All";
+    const hasProfit = minProfit.trim().length > 0;
+    const hasType = betType !== "ALL";
+    return hasBookmaker || hasProfit || hasType;
+  }, [selectedBookmaker, minProfit, betType]);
+
+  const handleResetFilters = useCallback(() => {
+    setSelectedBookmaker("All");
+    setMinProfit("");
+    setBetType("ALL");
+    setSortOption(DEFAULT_SORT);
+  }, []);
+
+  const matchesBookmaker = useCallback((arb: Arbitrage, bookmaker: string) => {
+    const normalized = bookmaker.toLowerCase();
+    return [
+      arb.back_bookmaker,
+      arb.lay_bookmaker,
+      arb.home?.bookmaker,
+      arb.away?.bookmaker,
+    ]
+      .filter(Boolean)
+      .map((value) => (value as string).toLowerCase())
+      .some((value) => value.includes(normalized));
+  }, []);
+
+  const processedArbitrages = useMemo(() => {
+    const minProfitValue = Number.parseFloat(minProfit.replace(",", "."));
+    const shouldFilterByProfit = !Number.isNaN(minProfitValue);
+
+    let list = arbitrages;
+
+    if (activeSportOption.key !== ALL_SPORT_FILTER_KEY) {
+      list = list.filter((arb) =>
+        activeSportOption.matcher(arb.sport_key, arb.sport)
+      );
+    }
+
+    if (selectedBookmaker !== "All") {
+      list = list.filter((arb) => matchesBookmaker(arb, selectedBookmaker));
+    }
+
+    if (shouldFilterByProfit) {
+      list = list.filter((arb) => arb.profit_percent >= minProfitValue);
+    }
+
+    if (betType !== "ALL") {
+      list = list.filter((arb) => arb.type === betType);
+    }
+
+    const sorted = [...list];
+    switch (sortOption) {
+      case "profit-asc":
+        sorted.sort((a, b) => a.profit_percent - b.profit_percent);
+        break;
+      case "match-az":
+        sorted.sort((a, b) => collator.compare(matchLabel(a), matchLabel(b)));
+        break;
+      case "match-za":
+        sorted.sort((a, b) => collator.compare(matchLabel(b), matchLabel(a)));
+        break;
+      case "profit-desc":
+      default:
+        sorted.sort((a, b) => b.profit_percent - a.profit_percent);
+        break;
+    }
+
+    return sorted;
+  }, [
+    arbitrages,
+    activeSportOption,
+    selectedBookmaker,
+    matchesBookmaker,
+    minProfit,
+    betType,
+    sortOption,
+  ]);
+
   const grouped = useMemo(() => {
-    return filteredArbitrages.reduce<Record<string, Arbitrage[]>>((acc, arb) => {
-      const key = `${arb.home_team} vs ${arb.away_team} @ ${arb.match_date}`;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(arb);
-      return acc;
-    }, {});
-  }, [filteredArbitrages]);
+    const map = new Map<string, Arbitrage[]>();
+    processedArbitrages.forEach((arb) => {
+      const key = getArbitrageKey(arb);
+      const group = map.get(key);
+      if (group) {
+        group.push(arb);
+      } else {
+        map.set(key, [arb]);
+      }
+    });
+    return map;
+  }, [processedArbitrages]);
 
-  const hasArbitrages = filteredArbitrages.length > 0;
-  const currentSportName =
-    SPORT_FILTERS.find((f) => f.key === selectedSport)?.name || selectedSport;
+  const hasArbitrages = processedArbitrages.length > 0;
+  const currentSportName = activeSportOption?.name || selectedSport;
+  const isInitialLoading =
+    status === "connecting" || (status === "open" && arbitrages.length === 0);
 
-  // 🌀 Tarjeta animada de carga
   const LoadingCard = () => (
     <div className="match-container fade-in">
       <div className="match-header shimmer">
@@ -97,9 +277,6 @@ export default function ArbitrageList() {
     </div>
   );
 
-  // 🔍 Determina si mostrar loader o mensaje vacío
-  const isLoading = status === "connecting" || (status === "open" && arbitrages.length === 0);
-
   return (
     <>
       {isSidebarOpen && (
@@ -116,18 +293,35 @@ export default function ArbitrageList() {
           setSelectedSport={setSelectedSport}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
+          sports={sportOptions}
         />
 
         <main className="content-area">
           <BankControl bank={bank} setBank={setBank} />
 
+          <FiltersToolbar
+            bookmakerOptions={bookmakerOptions}
+            selectedBookmaker={selectedBookmaker}
+            onBookmakerChange={setSelectedBookmaker}
+            minProfit={minProfit}
+            onMinProfitChange={setMinProfit}
+            betType={betType}
+            betTypeOptions={betTypeOptions}
+            onBetTypeChange={setBetType}
+            sortOption={sortOption}
+            sortOptions={sortOptions}
+            onSortOptionChange={setSortOption}
+            onReset={handleResetFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+
           <div className="arbitrage-panel">
             <h2 className="panel-title">
               Oportunidades de Arbitraje{" "}
-              {selectedSport !== "All" ? `en ${currentSportName}` : ""}
+              {selectedSport !== ALL_SPORT_FILTER_KEY ? `en ${currentSportName}` : ""}
             </h2>
 
-            {isLoading && (
+            {isInitialLoading && (
               <div className="text-center text-gray-400 mt-10">
                 <LoadingCard />
                 <p className="mt-6 text-sm opacity-70">
@@ -136,21 +330,18 @@ export default function ArbitrageList() {
               </div>
             )}
 
-            {!isLoading && !hasArbitrages && (
+            {!isInitialLoading && !hasArbitrages && (
               <p className="no-arbs-message">
-                No hay oportunidades de arbitraje disponibles{" "}
-                {selectedSport !== "All"
-                  ? `para ${currentSportName}.`
-                  : "en este momento."}
+                {hasActiveFilters || selectedSport !== ALL_SPORT_FILTER_KEY
+                  ? "No encontramos arbitrajes que coincidan con los filtros seleccionados."
+                  : "No hay oportunidades de arbitraje disponibles en este momento."}
               </p>
             )}
 
-            {Object.entries(grouped).map(([match, arbs]) => (
+            {Array.from(grouped.entries()).map(([match, arbs]) => (
               <div key={match} className="match-container">
                 <div className="match-header fade-in">
-                  <h3>
-                    {arbs[0].home_team} vs {arbs[0].away_team}
-                  </h3>
+                  <h3>{arbs[0].home_team} vs {arbs[0].away_team}</h3>
                   <p>
                     {arbs[0].sport} | {arbs[0].match_date}
                   </p>
