@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "./arbitrages/style.css";
-import ThemeProvider from "./components/ThemeProvider";  // ✅ Aquí está el provider global
-import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
+import "@/styles/arbitrages.css";
+import ThemeProvider from "@/providers/ThemeProvider";
+import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
