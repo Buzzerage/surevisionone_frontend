@@ -35,9 +35,10 @@ const SportFilter = ({
                     return (
                         <button
                             key={sport.key}
-                            className={`sport-item ${isActive ? "sport-item-active" : ""}`}
+                            className={`sport-item${isActive ? " sport-item--active" : ""}`}
                             onClick={() => handleSelectSport(sport.key)}
                             aria-pressed={isActive}
+                            aria-current={isActive ? "true" : undefined}
                         >
                             <Icon className="sport-icon" />
                             <span className="sport-name">{sport.name}</span>

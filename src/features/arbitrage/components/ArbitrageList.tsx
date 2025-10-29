@@ -42,6 +42,7 @@ export default function ArbitrageList() {
   const [betType, setBetType] = useState<string>("ALL");
   const [sortOption, setSortOption] = useState<string>(DEFAULT_SORT);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isProfitSort = sortOption.startsWith("profit");
 
   const calculateStakes = useCallback(
     (arb: Arbitrage): StakeResult => {
@@ -86,7 +87,9 @@ export default function ArbitrageList() {
       }
     });
 
-    return Array.from(options.values());
+    const [allOption, ...dynamicOptions] = Array.from(options.values());
+    dynamicOptions.sort((a, b) => collator.compare(a.name, b.name));
+    return [allOption, ...dynamicOptions];
   }, [arbitrages]);
 
   useEffect(() => {
@@ -237,7 +240,37 @@ export default function ArbitrageList() {
     sortOption,
   ]);
 
+  const profitStream = useMemo(() => {
+    if (!isProfitSort) {
+      return [];
+    }
+
+    const rows: Array<{
+      id: string;
+      showHeader: boolean;
+      arbitrage: Arbitrage;
+    }> = [];
+
+    let lastMatchKey = "";
+    processedArbitrages.forEach((arb) => {
+      const matchKey = getArbitrageKey(arb);
+      const showHeader = matchKey !== lastMatchKey;
+      rows.push({
+        id: `${matchKey}-${arb.id_arb}`,
+        showHeader,
+        arbitrage: arb,
+      });
+      lastMatchKey = matchKey;
+    });
+
+    return rows;
+  }, [isProfitSort, processedArbitrages]);
+
   const grouped = useMemo(() => {
+    if (isProfitSort) {
+      return null;
+    }
+
     const map = new Map<string, Arbitrage[]>();
     processedArbitrages.forEach((arb) => {
       const key = getArbitrageKey(arb);
@@ -249,7 +282,7 @@ export default function ArbitrageList() {
       }
     });
     return map;
-  }, [processedArbitrages]);
+  }, [isProfitSort, processedArbitrages]);
 
   const hasArbitrages = processedArbitrages.length > 0;
   const currentSportName = activeSportOption?.name || selectedSport;
@@ -338,36 +371,73 @@ export default function ArbitrageList() {
               </p>
             )}
 
-            {Array.from(grouped.entries()).map(([match, arbs]) => (
-              <div key={match} className="match-container">
-                <div className="match-header fade-in">
-                  <h3>{arbs[0].home_team} vs {arbs[0].away_team}</h3>
-                  <p>
-                    {arbs[0].sport} | {arbs[0].match_date}
-                  </p>
-                </div>
-
-                <div className="arb-list-container">
-                  {arbs.map((arb) => {
-                    const stakes = calculateStakes(arb);
-                    return (
-                      <ArbitrageCard
-                        key={arb.id_arb}
-                        arb={arb}
-                        stakes={stakes}
-                        deltaState={
-                          lastDelta?.new?.includes(arb.id_arb)
-                            ? "new"
-                            : lastDelta?.updated?.includes(arb.id_arb)
-                            ? "updated"
-                            : undefined
-                        }
-                      />
-                    );
-                  })}
-                </div>
+            {isProfitSort && (
+              <div className="match-stream">
+                {profitStream.map(({ id, arbitrage, showHeader }) => {
+                  const stakes = calculateStakes(arbitrage);
+                  return (
+                    <div key={id} className="match-stream__item">
+                      {showHeader && (
+                        <div className="match-header match-header--inline fade-in">
+                          <h3>
+                            {arbitrage.home_team} vs {arbitrage.away_team}
+                          </h3>
+                          <p>
+                            {arbitrage.sport} | {arbitrage.match_date}
+                          </p>
+                        </div>
+                      )}
+                      <div className="match-stream__card">
+                        <ArbitrageCard
+                          arb={arbitrage}
+                          stakes={stakes}
+                          deltaState={
+                            lastDelta?.new?.includes(arbitrage.id_arb)
+                              ? "new"
+                              : lastDelta?.updated?.includes(arbitrage.id_arb)
+                              ? "updated"
+                              : undefined
+                          }
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
+
+            {!isProfitSort &&
+              grouped &&
+              Array.from(grouped.entries()).map(([match, arbs]) => (
+                <div key={match} className="match-container">
+                  <div className="match-header fade-in">
+                    <h3>{arbs[0].home_team} vs {arbs[0].away_team}</h3>
+                    <p>
+                      {arbs[0].sport} | {arbs[0].match_date}
+                    </p>
+                  </div>
+
+                  <div className="arb-list-container">
+                    {arbs.map((arb) => {
+                      const stakes = calculateStakes(arb);
+                      return (
+                        <ArbitrageCard
+                          key={arb.id_arb}
+                          arb={arb}
+                          stakes={stakes}
+                          deltaState={
+                            lastDelta?.new?.includes(arb.id_arb)
+                              ? "new"
+                              : lastDelta?.updated?.includes(arb.id_arb)
+                              ? "updated"
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
           </div>
         </main>
       </div>

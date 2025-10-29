@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FiFilter, FiRotateCw } from "react-icons/fi";
+import { FiFilter, FiRotateCw, FiChevronUp, FiChevronDown } from "react-icons/fi";
 
 interface SelectOption {
     value: string;
@@ -39,6 +39,22 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     onReset,
     hasActiveFilters,
 }) => {
+    const handleStep = (direction: "up" | "down") => {
+        const current = Number.parseFloat(minProfit.replace(",", "."));
+        const baseValue = Number.isNaN(current) ? 0 : current;
+        const delta = direction === "up" ? 0.1 : -0.1;
+        const next = Math.min(100, Math.max(0, Number((baseValue + delta).toFixed(1))));
+        onMinProfitChange(next.toFixed(1));
+    };
+
+    const handleWheel = (event: React.WheelEvent<HTMLInputElement>) => {
+        if (!event.shiftKey) {
+            return;
+        }
+        event.preventDefault();
+        handleStep(event.deltaY < 0 ? "up" : "down");
+    };
+
     return (
         <section className="filters-toolbar" aria-label="Filtros avanzados">
             <header className="filters-toolbar__header">
@@ -91,7 +107,26 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                             placeholder="Ej. 2.5"
                             value={minProfit}
                             onChange={(event) => onMinProfitChange(event.target.value)}
+                            onWheel={handleWheel}
                         />
+                        <div className="filters-toolbar__steppers" role="group" aria-label="Ajustar rentabilidad mínima">
+                            <button
+                                type="button"
+                                className="filters-toolbar__stepper-button"
+                                onClick={() => handleStep("up")}
+                                aria-label="Incrementar rentabilidad mínima"
+                            >
+                                <FiChevronUp aria-hidden="true" />
+                            </button>
+                            <button
+                                type="button"
+                                className="filters-toolbar__stepper-button"
+                                onClick={() => handleStep("down")}
+                                aria-label="Reducir rentabilidad mínima"
+                            >
+                                <FiChevronDown aria-hidden="true" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
