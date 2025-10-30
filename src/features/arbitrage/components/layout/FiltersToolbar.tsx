@@ -184,12 +184,12 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
 
                 <aside className="filters-toolbar__aside" aria-label="Gestión de capital">
                     <div className="filters-toolbar__aside-header">
-                        <span className="filters-toolbar__aside-icon" aria-hidden>
+                        <span className="filters-toolbar__aside-icon" aria-hidden="true">
                             💰
                         </span>
                         <div>
                             <h3>Capital disponible</h3>
-                            <p>Usamos tu bank para calcular las apuestas sugeridas.</p>
+                            <p>Introduce tu bank para ajustar los stakes sugeridos.</p>
                         </div>
                     </div>
                     <div className="filters-toolbar__bank-group">
@@ -209,10 +209,10 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                                     )
                                 }
                             />
-                            <span aria-hidden>€</span>
+                            <span aria-hidden="true">€</span>
                         </div>
                         <p className="filters-toolbar__bank-helper">
-                            Ajusta este valor para adaptar el stake recomendado a tu capital.
+                            Ajusta el importe para adaptar la exposición recomendada a tu capital.
                         </p>
                         <div className="filters-toolbar__bank-actions" role="group" aria-label="Ajustar capital">
                             <button
@@ -245,9 +245,9 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                             </button>
                         </div>
                         <div className="filters-toolbar__bank-summary">
-                            <FiArrowLeftRight aria-hidden />
+                            <FiArrowLeftRight aria-hidden="true" />
                             <span>
-                                Combina los atajos rápidos con un valor manual para simular distintos escenarios de stake.
+                                Combina los atajos y el valor manual para simular distintos escenarios de stake.
                             </span>
                         </div>
                     </div>

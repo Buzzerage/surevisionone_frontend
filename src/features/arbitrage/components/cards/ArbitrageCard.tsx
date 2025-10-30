@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import BetInfo from "./BetInfo";
 import ProfitBadge from "../ui/ProfitBadge";
 import NewBadge from "../ui/NewBadge";
-import { isRecent } from "../../utils/helpers";
+import { isRecent, timeUntilExpiry } from "../../utils/helpers";
 import { Arbitrage, StakeResult } from "../../utils/types";
 
 type ArbitrageCardProps = {
@@ -12,33 +12,36 @@ type ArbitrageCardProps = {
 };
 
 const ArbitrageCard = ({ arb, stakes, deltaState }: ArbitrageCardProps) => {
+  const referenceDate = useMemo(
+    () => arb.created_at ?? arb.updated_at ?? arb.date_obtained,
+    [arb.created_at, arb.updated_at, arb.date_obtained]
+  );
+
   const [showNewBadge, setShowNewBadge] = useState(() =>
-    isRecent(arb.date_obtained, 1)
+    deltaState === "new" || isRecent(referenceDate, 1)
   );
 
   useEffect(() => {
-    const recent = isRecent(arb.date_obtained, 1);
-    setShowNewBadge(recent);
+    const shouldShow = deltaState === "new" || isRecent(referenceDate, 1);
+    setShowNewBadge(shouldShow);
 
-    if (!recent) {
+    if (!shouldShow) {
       return undefined;
     }
 
-    const obtainedAt = new Date(arb.date_obtained).getTime();
-    if (Number.isNaN(obtainedAt)) {
-      return undefined;
-    }
-    const expiryTime = obtainedAt + 60_000; // 1 minuto
-    const timeoutDelay = Math.max(0, expiryTime - Date.now());
+    const baseDelay = timeUntilExpiry(referenceDate, 1);
+    const delay = deltaState === "new"
+      ? Math.max(60_000, baseDelay)
+      : baseDelay;
 
     const timer = window.setTimeout(() => {
       setShowNewBadge(false);
-    }, timeoutDelay);
+    }, delay);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [arb.date_obtained]);
+  }, [deltaState, referenceDate]);
 
   // 🌀 Define clases dinámicas según el estado del delta
   const deltaClass =

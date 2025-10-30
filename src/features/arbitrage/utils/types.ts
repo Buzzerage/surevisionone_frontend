@@ -6,10 +6,12 @@ export type Arbitrage = {
     profit_percent: number;
     date_obtained: string;
     type: "Back vs Lay" | "Back vs Back";
-    
+    created_at?: string | null;
+    updated_at?: string | null;
+
     // --- PROPIEDADES DE DEPORTE (NUEVA PROPIEDAD 'sport') ---
-    sport: string;          // ⬅️ AÑADIDO: Nombre del evento/liga (ej: "ATP Shanghai Masters")
-    sport_key: string;      // Clave en minúsculas para el filtrado (ej: "tennis_...")
+    sport: string; // ⬅️ AÑADIDO: Nombre del evento/liga (ej: "ATP Shanghai Masters")
+    sport_key: string; // Clave en minúsculas para el filtrado (ej: "tennis_...")
 
     // --- PROPIEDADES DE CUOTAS Y BOOKMAKERS ---
     player?: string;
@@ -21,7 +23,7 @@ export type Arbitrage = {
     // Propiedades para Back vs Back (Home/Away)
     home?: { team: string; bookmaker: string; odds: number };
     away?: { team: string; bookmaker: string; odds: number };
-    
+
     // Propiedades de la estructura del partido
     home_team: string;
     away_team: string;
