@@ -14,7 +14,7 @@ import {
   resolveSportFilterOption,
   type SportFilterOption,
 } from "../utils/constants";
-import SportFilter from "./layout/SportFilter";
+import BankSidebar from "./layout/BankSidebar";
 import FiltersToolbar from "./layout/FiltersToolbar";
 import ArbitrageCard from "./cards/ArbitrageCard";
 import type { Arbitrage, StakeResult } from "../utils/types";
@@ -164,14 +164,16 @@ export default function ArbitrageList() {
     const hasBookmaker = selectedBookmaker !== "All";
     const hasProfit = minProfit.trim().length > 0;
     const hasType = betType !== "ALL";
-    return hasBookmaker || hasProfit || hasType;
-  }, [selectedBookmaker, minProfit, betType]);
+    const hasSport = selectedSport !== ALL_SPORT_FILTER_KEY;
+    return hasBookmaker || hasProfit || hasType || hasSport;
+  }, [selectedBookmaker, minProfit, betType, selectedSport]);
 
   const handleResetFilters = useCallback(() => {
     setSelectedBookmaker("All");
     setMinProfit("");
     setBetType("ALL");
     setSortOption(DEFAULT_SORT);
+    setSelectedSport(ALL_SPORT_FILTER_KEY);
   }, []);
 
   const matchesBookmaker = useCallback((arb: Arbitrage, bookmaker: string) => {
@@ -309,6 +311,31 @@ export default function ArbitrageList() {
     </div>
   );
 
+  const renderMatchHeader = (arb: Arbitrage, extraClass = "") => {
+    const sportOption = resolveSportFilterOption(arb.sport_key, arb.sport);
+    const SportIcon = sportOption.icon;
+
+    return (
+      <div className={`match-header ${extraClass}`.trim()}>
+        <div className="match-header__badge" aria-hidden="true">
+          <SportIcon />
+        </div>
+        <div className="match-header__content">
+          <h3>
+            {arb.home_team} vs {arb.away_team}
+          </h3>
+          <p>
+            <span className="match-header__sport-name">{sportOption.name}</span>
+            <span className="match-header__dot" aria-hidden="true">
+              •
+            </span>
+            <span>{arb.match_date}</span>
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {isSidebarOpen && (
@@ -320,12 +347,11 @@ export default function ArbitrageList() {
       )}
 
       <div className="main-layout">
-        <SportFilter
-          selectedSport={selectedSport}
-          setSelectedSport={setSelectedSport}
+        <BankSidebar
+          bank={bank}
+          onBankChange={setBank}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
-          sports={sportOptions}
         />
 
         <main className="content-area">
@@ -343,8 +369,9 @@ export default function ArbitrageList() {
             onSortOptionChange={setSortOption}
             onReset={handleResetFilters}
             hasActiveFilters={hasActiveFilters}
-            bank={bank}
-            onBankChange={setBank}
+            sportOptions={sportOptions}
+            selectedSport={selectedSport}
+            onSportChange={setSelectedSport}
           />
 
           <div className="arbitrage-panel">
@@ -377,13 +404,11 @@ export default function ArbitrageList() {
                   return (
                     <div key={id} className="match-stream__item">
                       {showHeader && (
-                        <div className="match-header match-header--inline fade-in">
-                          <h3>
-                            {arbitrage.home_team} vs {arbitrage.away_team}
-                          </h3>
-                          <p>
-                            {arbitrage.sport} | {arbitrage.match_date}
-                          </p>
+                        <div className="fade-in">
+                          {renderMatchHeader(
+                            arbitrage,
+                            "match-header--inline"
+                          )}
                         </div>
                       )}
                       <div className="match-stream__card">
@@ -409,11 +434,8 @@ export default function ArbitrageList() {
               grouped &&
               Array.from(grouped.entries()).map(([match, arbs]) => (
                 <div key={match} className="match-container">
-                  <div className="match-header fade-in">
-                    <h3>{arbs[0].home_team} vs {arbs[0].away_team}</h3>
-                    <p>
-                      {arbs[0].sport} | {arbs[0].match_date}
-                    </p>
+                  <div className="fade-in">
+                    {renderMatchHeader(arbs[0])}
                   </div>
 
                   <div className="arb-list-container">
