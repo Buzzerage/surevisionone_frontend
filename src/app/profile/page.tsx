@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabaseSession } from "../hooks/useSupabaseSession";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import ProfilePanel from "./ProfilePanel";
 
 const ProfilePage = () => {
