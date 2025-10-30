@@ -212,7 +212,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
           <div className="flex items-center gap-3">
             {/* 🔙 Botón de retroceso */}
             <button
-              onClick={() => router.push("/arbitrages")}
+              onClick={() => router.push("/panel")}
               className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-accent)] transition-all hover:bg-[var(--color-hover-bg)] hover:scale-[1.03]"
             >
               <svg

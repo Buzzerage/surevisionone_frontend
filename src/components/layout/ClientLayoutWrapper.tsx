@@ -15,7 +15,7 @@ export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperPro
   const pathname = usePathname();
   const { session, loading } = useSupabaseSession();
 
-  const isPrivate = pathname.startsWith("/arbitrages") || pathname.startsWith("/profile");
+  const isPrivate = pathname.startsWith("/panel") || pathname.startsWith("/profile");
 
   return (
     <>
