@@ -14,7 +14,7 @@ import {
   resolveSportFilterOption,
   type SportFilterOption,
 } from "../utils/constants";
-import SportFilter from "./layout/SportFilter";
+import BankSidebar from "./layout/BankSidebar";
 import FiltersToolbar from "./layout/FiltersToolbar";
 import ArbitrageCard from "./cards/ArbitrageCard";
 import type { Arbitrage, StakeResult } from "../utils/types";
@@ -40,8 +40,21 @@ export default function ArbitrageList() {
   const [minProfit, setMinProfit] = useState<string>("");
   const [betType, setBetType] = useState<string>("ALL");
   const [sortOption, setSortOption] = useState<string>(DEFAULT_SORT);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isBankOpen, setIsBankOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const isProfitSort = sortOption.startsWith("profit");
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsBankOpen(false);
+        setIsFiltersOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const calculateStakes = useCallback(
     (arb: Arbitrage): StakeResult => {
@@ -164,14 +177,16 @@ export default function ArbitrageList() {
     const hasBookmaker = selectedBookmaker !== "All";
     const hasProfit = minProfit.trim().length > 0;
     const hasType = betType !== "ALL";
-    return hasBookmaker || hasProfit || hasType;
-  }, [selectedBookmaker, minProfit, betType]);
+    const hasSport = selectedSport !== ALL_SPORT_FILTER_KEY;
+    return hasBookmaker || hasProfit || hasType || hasSport;
+  }, [selectedBookmaker, minProfit, betType, selectedSport]);
 
   const handleResetFilters = useCallback(() => {
     setSelectedBookmaker("All");
     setMinProfit("");
     setBetType("ALL");
     setSortOption(DEFAULT_SORT);
+    setSelectedSport(ALL_SPORT_FILTER_KEY);
   }, []);
 
   const matchesBookmaker = useCallback((arb: Arbitrage, bookmaker: string) => {
@@ -309,26 +324,76 @@ export default function ArbitrageList() {
     </div>
   );
 
+  const renderMatchHeader = (arb: Arbitrage, extraClass = "") => {
+    const sportOption = resolveSportFilterOption(arb.sport_key, arb.sport);
+    const SportIcon = sportOption.icon;
+
+    return (
+      <div className={`match-header ${extraClass}`.trim()}>
+        <div className="match-header__badge" aria-hidden="true">
+          <SportIcon />
+        </div>
+        <div className="match-header__content">
+          <h3>
+            {arb.home_team} vs {arb.away_team}
+          </h3>
+          <p>
+            <span className="match-header__sport-name">{sportOption.name}</span>
+            <span className="match-header__dot" aria-hidden="true">
+              •
+            </span>
+            <span>{arb.match_date}</span>
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
-      {isSidebarOpen && (
+      {(isBankOpen || isFiltersOpen) && (
         <div
           className="backdrop"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => {
+            setIsBankOpen(false);
+            setIsFiltersOpen(false);
+          }}
           aria-hidden="true"
         />
       )}
 
       <div className="main-layout">
-        <SportFilter
-          selectedSport={selectedSport}
-          setSelectedSport={setSelectedSport}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          sports={sportOptions}
+        <BankSidebar
+          bank={bank}
+          onBankChange={setBank}
+          isSidebarOpen={isBankOpen}
+          setIsSidebarOpen={setIsBankOpen}
         />
 
         <main className="content-area">
+          <div className="content-area__mobile-actions">
+            <button
+              type="button"
+              className="content-area__toggle"
+              onClick={() => setIsFiltersOpen(true)}
+              aria-controls="advanced-filters"
+              aria-expanded={isFiltersOpen}
+            >
+              <span aria-hidden="true">🎛️</span>
+              <span>Filtros</span>
+            </button>
+            <button
+              type="button"
+              className="content-area__toggle"
+              onClick={() => setIsBankOpen(true)}
+              aria-controls="bank-sidebar"
+              aria-expanded={isBankOpen}
+            >
+              <span aria-hidden="true">💰</span>
+              <span>Bank</span>
+            </button>
+          </div>
+
           <FiltersToolbar
             bookmakerOptions={bookmakerOptions}
             selectedBookmaker={selectedBookmaker}
@@ -343,8 +408,11 @@ export default function ArbitrageList() {
             onSortOptionChange={setSortOption}
             onReset={handleResetFilters}
             hasActiveFilters={hasActiveFilters}
-            bank={bank}
-            onBankChange={setBank}
+            sportOptions={sportOptions}
+            selectedSport={selectedSport}
+            onSportChange={setSelectedSport}
+            isMobileOpen={isFiltersOpen}
+            onCloseMobile={() => setIsFiltersOpen(false)}
           />
 
           <div className="arbitrage-panel">
@@ -377,13 +445,11 @@ export default function ArbitrageList() {
                   return (
                     <div key={id} className="match-stream__item">
                       {showHeader && (
-                        <div className="match-header match-header--inline fade-in">
-                          <h3>
-                            {arbitrage.home_team} vs {arbitrage.away_team}
-                          </h3>
-                          <p>
-                            {arbitrage.sport} | {arbitrage.match_date}
-                          </p>
+                        <div className="fade-in">
+                          {renderMatchHeader(
+                            arbitrage,
+                            "match-header--inline"
+                          )}
                         </div>
                       )}
                       <div className="match-stream__card">
@@ -409,11 +475,8 @@ export default function ArbitrageList() {
               grouped &&
               Array.from(grouped.entries()).map(([match, arbs]) => (
                 <div key={match} className="match-container">
-                  <div className="match-header fade-in">
-                    <h3>{arbs[0].home_team} vs {arbs[0].away_team}</h3>
-                    <p>
-                      {arbs[0].sport} | {arbs[0].match_date}
-                    </p>
+                  <div className="fade-in">
+                    {renderMatchHeader(arbs[0])}
                   </div>
 
                   <div className="arb-list-container">
