@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ArbitrageList from "./ArbitrageList";
-import { useSupabaseSession } from "../hooks/useSupabaseSession";
+import ArbitrageList from "@/features/arbitrage/components/ArbitrageList";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 
 export default function ArbitragesPage() {
   const router = useRouter();
