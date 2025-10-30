@@ -3,6 +3,24 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
+type DeleteAccountRequestBody = {
+  userId?: string;
+};
+
+async function readJsonBody(request: Request): Promise<DeleteAccountRequestBody | null> {
+  try {
+    const body = await request.json();
+    if (body && typeof body === "object") {
+      return body as DeleteAccountRequestBody;
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("No se pudo parsear el cuerpo de la solicitud de eliminación", error);
+    }
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
     const authorization = request.headers.get("authorization");
@@ -37,9 +55,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sesión inválida." }, { status: 401 });
     }
 
-    const { userId } = await request.json().catch(() => ({ userId: null }));
+    const parsedBody = await readJsonBody(request);
+    const requestedUserId = parsedBody?.userId;
 
-    if (!userId || userId !== userData.user.id) {
+    if (requestedUserId && requestedUserId !== userData.user.id) {
       return NextResponse.json({ error: "No puedes eliminar esta cuenta." }, { status: 403 });
     }
 
@@ -49,13 +68,54 @@ export async function POST(request: Request) {
       },
     });
 
-    const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
+    const { error: revokeError } = await adminClient.auth.admin.invalidateUserRefreshTokens(
+      userData.user.id
+    );
 
-    if (deleteError) {
-      return NextResponse.json(
-        { error: deleteError.message || "No se pudo eliminar la cuenta." },
-        { status: 400 }
-      );
+    if (revokeError && process.env.NODE_ENV !== "production") {
+      console.warn("No se pudieron invalidar los tokens de actualización antes de eliminar la cuenta", revokeError);
+    }
+
+    const deleteResponse = await fetch(
+      `${supabaseUrl}/auth/v1/admin/users/${userData.user.id}?should_soft_delete=false`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      }
+    );
+
+    let deletePayload: unknown = null;
+    const responseHasJson = deleteResponse.headers
+      .get("content-type")
+      ?.toLowerCase()
+      .includes("application/json");
+
+    if (responseHasJson) {
+      deletePayload = await deleteResponse.json().catch(() => null);
+    }
+
+    if (!deleteResponse.ok) {
+      const errorMessage =
+        (deletePayload &&
+          typeof deletePayload === "object" &&
+          "error" in deletePayload &&
+          typeof deletePayload.error === "string" &&
+          deletePayload.error.length > 0 &&
+          deletePayload.error) ||
+        (deletePayload &&
+          typeof deletePayload === "object" &&
+          "message" in deletePayload &&
+          typeof deletePayload.message === "string" &&
+          deletePayload.message.length > 0 &&
+          deletePayload.message) ||
+        "No se pudo eliminar la cuenta.";
+
+      const status = deleteResponse.status >= 400 ? deleteResponse.status : 502;
+
+      return NextResponse.json({ error: errorMessage }, { status });
     }
 
     return NextResponse.json({ success: true });
