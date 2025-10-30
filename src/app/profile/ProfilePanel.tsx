@@ -2,18 +2,18 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
 
-import LogoutButton from "../components/LogoutButton";
+import { supabase } from "@/lib/supabase/client";
+
+import LogoutButton from "@/components/auth/LogoutButton";
 import ProfileCard from "./components/ProfileCard";
 import PasswordForm, { type PasswordFormValues } from "./components/PasswordForm";
 import StatusBanner from "./components/StatusBanner";
 import { PLAN_LIBRARY } from "./constants";
 import { normalizePlanName, resolveRenewalDate } from "./utils";
 import type { FeedbackState, PlanObject, ProfileUser } from "./types";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
 const emptyForm: PasswordFormValues = {
   currentPassword: "",
@@ -22,7 +22,7 @@ const emptyForm: PasswordFormValues = {
 };
 
 type ProfilePanelProps = {
-  user: ProfileUser;
+  user: User;
 };
 
 const ProfilePanel = ({ user }: ProfilePanelProps) => {
@@ -33,15 +33,35 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
-  const planObject =
-    typeof user?.plan === "object" && user.plan !== null
-      ? (user.plan as PlanObject)
-      : undefined;
+  const planSource = useMemo<ProfileUser["plan"]>(() => {
+    if (!user) return undefined;
 
-  const normalizedPlan = useMemo(
-    () => normalizePlanName(user?.plan),
-    [user?.plan]
-  );
+    const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
+
+    const subscription =
+      typeof metadata.subscription === "object" && metadata.subscription !== null
+        ? (metadata.subscription as Record<string, unknown>)
+        : undefined;
+
+    const directPlan = (user as unknown as ProfileUser)?.plan;
+
+    return (
+      (metadata.plan as ProfileUser["plan"]) ??
+      (subscription?.plan as ProfileUser["plan"]) ??
+      (appMetadata.plan as ProfileUser["plan"]) ??
+      directPlan
+    );
+  }, [user]);
+
+  const planObject = useMemo<PlanObject | undefined>(() => {
+    if (planSource && typeof planSource === "object") {
+      return planSource as PlanObject;
+    }
+    return undefined;
+  }, [planSource]);
+
+  const normalizedPlan = useMemo(() => normalizePlanName(planSource), [planSource]);
 
   const planMetadata = PLAN_LIBRARY[normalizedPlan] ?? PLAN_LIBRARY.Free;
   const planStatus = planObject?.status ?? planObject?.state;
@@ -53,8 +73,17 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const refreshIntervalMinutes =
     quota?.refreshIntervalMinutes ?? quota?.refresh_interval_minutes;
 
-  const fullName = user?.full_name ?? user?.name;
-  const email = user?.email ?? "—";
+  const userMetadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const fullName =
+    (userMetadata.full_name as string | undefined) ??
+    (userMetadata.fullName as string | undefined) ??
+    (userMetadata.name as string | undefined) ??
+    (userMetadata.display_name as string | undefined) ??
+    (userMetadata.displayName as string | undefined) ??
+    (user as unknown as ProfileUser)?.full_name ??
+    (user as unknown as ProfileUser)?.name;
+  const userEmail = user?.email ?? undefined;
+  const email = userEmail ?? "—";
 
   const updateFormValue = (field: keyof PasswordFormValues, value: string) => {
     setFormValues((previous) => ({ ...previous, [field]: value }));
@@ -80,18 +109,18 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       return;
     }
 
-    if (formValues.newPassword.length < 8) {
-      setFeedback({
-        type: "warning",
-        message: "Utiliza una contraseña de al menos 8 caracteres para mayor seguridad.",
-      });
-      return;
-    }
+    const newPassword = formValues.newPassword;
+    const passwordMeetsRequirements =
+      newPassword.length >= 12 &&
+      /[a-z]/.test(newPassword) &&
+      /[A-Z]/.test(newPassword) &&
+      /\d/.test(newPassword);
 
-    if (!API_BASE_URL) {
+    if (!passwordMeetsRequirements) {
       setFeedback({
         type: "error",
-        message: "No hay una URL de API configurada para procesar el cambio.",
+        message:
+          "La contraseña debe tener al menos 12 caracteres e incluir al menos una letra minúscula, una mayúscula y un número.",
       });
       return;
     }
@@ -99,27 +128,38 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
     setIsUpdatingPassword(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          currentPassword: formValues.currentPassword,
-          newPassword: formValues.newPassword,
-        }),
+      if (!userEmail) {
+        throw new Error("No pudimos encontrar tu correo electrónico para validar la contraseña.");
+      }
+
+      const { error: validationError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: formValues.currentPassword,
       });
 
-      if (!response.ok) {
-        let detail = "No se pudo actualizar la contraseña.";
-        try {
-          const payload = await response.json();
-          detail = payload?.detail ?? payload?.message ?? detail;
-        } catch (error) {
-          console.warn("No se pudo leer la respuesta del cambio de contraseña", error);
-        }
-        throw new Error(detail);
+      if (validationError) {
+        const message =
+          validationError.status === 400 || validationError.status === 401
+            ? "La contraseña actual no es correcta."
+            : validationError.message || "No se pudo validar tu contraseña actual.";
+        throw new Error(message);
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: formValues.newPassword,
+      });
+
+      if (updateError) {
+        const message =
+          updateError.status === 422
+            ? "La nueva contraseña no cumple los requisitos de seguridad."
+            : updateError.message || "No se pudo actualizar la contraseña.";
+        throw new Error(message);
+      }
+
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError && process.env.NODE_ENV !== "production") {
+        console.warn("No se pudo refrescar la sesión tras actualizar la contraseña", refreshError);
       }
 
       setFeedback({
@@ -158,39 +198,78 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       return;
     }
 
-    if (!API_BASE_URL) {
-      setFeedback({
-        type: "error",
-        message: "No hay una URL de API disponible para eliminar tu cuenta.",
-      });
-      return;
-    }
-
     setIsDeletingAccount(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/delete-account`, {
-        method: "DELETE",
-        credentials: "include",
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw new Error(sessionError.message || "No se pudo verificar la sesión actual.");
+      }
+
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error("No se pudo validar tu sesión para eliminar la cuenta.");
+      }
+
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ userId: sessionData.session.user.id }),
       });
 
+      const responseHasJson = response.headers
+        .get("content-type")
+        ?.toLowerCase()
+        .includes("application/json");
+
+      const payload = responseHasJson ? await response.json().catch(() => null) : null;
+
       if (!response.ok) {
-        let detail = "No se pudo eliminar la cuenta.";
-        try {
-          const payload = await response.json();
-          detail = payload?.detail ?? payload?.message ?? detail;
-        } catch (error) {
-          console.warn("No se pudo leer la respuesta de eliminación", error);
-        }
-        throw new Error(detail);
+        const errorMessage =
+          payload &&
+          typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof payload.error === "string" &&
+          payload.error.length > 0
+            ? payload.error
+            : "No se pudo eliminar la cuenta.";
+        throw new Error(errorMessage);
+      }
+
+      if (
+        payload &&
+        typeof payload === "object" &&
+        payload !== null &&
+        "success" in payload &&
+        payload.success === false
+      ) {
+        const errorMessage =
+          "error" in payload && typeof payload.error === "string" && payload.error.length > 0
+            ? payload.error
+            : "No se pudo eliminar la cuenta.";
+        throw new Error(errorMessage);
       }
 
       setFeedback({
         type: "success",
         message: "Tu cuenta se eliminó correctamente. Te redirigiremos al inicio.",
       });
-      setTimeout(() => {
-        router.replace("/");
+      setTimeout(async () => {
+        try {
+          await supabase.auth.signOut();
+        } catch (signOutError) {
+          if (process.env.NODE_ENV !== "production") {
+            console.error("No se pudo cerrar la sesión después de eliminar la cuenta", signOutError);
+          }
+        } finally {
+          router.replace("/");
+        }
       }, 1500);
     } catch (error) {
       const message =
@@ -367,8 +446,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
             tone="danger"
           >
             <p className="mb-5 text-sm leading-relaxed text-[var(--color-danger-text)]">
-              Antes de continuar descarga tus reportes y asegúrate de no tener operaciones pendientes. Una vez
-              confirmes, la información se eliminará de forma permanente.
+              Esta acción eliminará tu cuenta y tu método de pago, y no podrás restaurarlos posteriormente.
             </p>
             <button
               type="button"

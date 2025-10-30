@@ -1,13 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-    FiFilter,
-    FiRotateCw,
-    FiChevronUp,
-    FiChevronDown,
-    FiArrowLeftRight,
-} from "react-icons/fi";
+import { FiFilter, FiRotateCw, FiChevronUp, FiChevronDown, FiArrowRight } from "react-icons/fi";
 
 interface SelectOption {
     value: string;
@@ -245,7 +239,7 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                             </button>
                         </div>
                         <div className="filters-toolbar__bank-summary">
-                            <FiArrowLeftRight aria-hidden="true" />
+                            <FiArrowRight aria-hidden="true" />
                             <span>
                                 Combina los atajos y el valor manual para simular distintos escenarios de stake.
                             </span>
