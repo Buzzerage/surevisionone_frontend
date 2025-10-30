@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FiFilter, FiRotateCw, FiChevronUp, FiChevronDown } from "react-icons/fi";
+import { FiFilter, FiRotateCw, FiChevronUp, FiChevronDown, FiX } from "react-icons/fi";
 import type { SportFilterOption } from "../../utils/constants";
 
 interface SelectOption {
@@ -26,6 +26,8 @@ interface FiltersToolbarProps {
     sportOptions: SportFilterOption[];
     selectedSport: string;
     onSportChange: (value: string) => void;
+    isMobileOpen: boolean;
+    onCloseMobile: () => void;
 }
 
 const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
@@ -45,6 +47,8 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     sportOptions,
     selectedSport,
     onSportChange,
+    isMobileOpen,
+    onCloseMobile,
 }) => {
     const handleStep = (direction: "up" | "down") => {
         const current = Number.parseFloat(minProfit.replace(",", "."));
@@ -63,12 +67,24 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     };
 
     return (
-        <section className="filters-toolbar" aria-label="Filtros avanzados">
+        <section
+            id="advanced-filters"
+            className={`filters-toolbar${isMobileOpen ? " filters-toolbar--open" : ""}`}
+            aria-label="Filtros avanzados"
+        >
             <header className="filters-toolbar__header">
                 <div className="filters-toolbar__title">
                     <FiFilter aria-hidden="true" />
                     <span>Refinar resultados</span>
                 </div>
+                <button
+                    type="button"
+                    className="filters-toolbar__close"
+                    onClick={onCloseMobile}
+                >
+                    <span className="sr-only">Cerrar filtros</span>
+                    <FiX aria-hidden="true" />
+                </button>
                 <button
                     type="button"
                     className="filters-toolbar__reset"

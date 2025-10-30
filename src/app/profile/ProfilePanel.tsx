@@ -109,7 +109,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       return;
     }
 
-    if (formValues.newPassword.length < 8) {
+    if (formValues.newPassword.length < 12) {
       setFeedback({
         type: "warning",
         message: "Utiliza una contraseña de al menos 8 caracteres para mayor seguridad.",

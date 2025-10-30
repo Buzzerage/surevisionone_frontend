@@ -40,8 +40,21 @@ export default function ArbitrageList() {
   const [minProfit, setMinProfit] = useState<string>("");
   const [betType, setBetType] = useState<string>("ALL");
   const [sortOption, setSortOption] = useState<string>(DEFAULT_SORT);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isBankOpen, setIsBankOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const isProfitSort = sortOption.startsWith("profit");
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsBankOpen(false);
+        setIsFiltersOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const calculateStakes = useCallback(
     (arb: Arbitrage): StakeResult => {
@@ -338,10 +351,13 @@ export default function ArbitrageList() {
 
   return (
     <>
-      {isSidebarOpen && (
+      {(isBankOpen || isFiltersOpen) && (
         <div
           className="backdrop"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => {
+            setIsBankOpen(false);
+            setIsFiltersOpen(false);
+          }}
           aria-hidden="true"
         />
       )}
@@ -350,11 +366,34 @@ export default function ArbitrageList() {
         <BankSidebar
           bank={bank}
           onBankChange={setBank}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
+          isSidebarOpen={isBankOpen}
+          setIsSidebarOpen={setIsBankOpen}
         />
 
         <main className="content-area">
+          <div className="content-area__mobile-actions">
+            <button
+              type="button"
+              className="content-area__toggle"
+              onClick={() => setIsFiltersOpen(true)}
+              aria-controls="advanced-filters"
+              aria-expanded={isFiltersOpen}
+            >
+              <span aria-hidden="true">🎛️</span>
+              <span>Filtros</span>
+            </button>
+            <button
+              type="button"
+              className="content-area__toggle"
+              onClick={() => setIsBankOpen(true)}
+              aria-controls="bank-sidebar"
+              aria-expanded={isBankOpen}
+            >
+              <span aria-hidden="true">💰</span>
+              <span>Bank</span>
+            </button>
+          </div>
+
           <FiltersToolbar
             bookmakerOptions={bookmakerOptions}
             selectedBookmaker={selectedBookmaker}
@@ -372,6 +411,8 @@ export default function ArbitrageList() {
             sportOptions={sportOptions}
             selectedSport={selectedSport}
             onSportChange={setSelectedSport}
+            isMobileOpen={isFiltersOpen}
+            onCloseMobile={() => setIsFiltersOpen(false)}
           />
 
           <div className="arbitrage-panel">

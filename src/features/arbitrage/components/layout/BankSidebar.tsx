@@ -25,55 +25,65 @@ const BankSidebar: React.FC<BankSidebarProps> = ({
             aria-label="Gestión de capital"
         >
             <div className="bank-sidebar__header">
-                <span className="bank-sidebar__icon" aria-hidden="true">
-                    💰
-                </span>
-                <h3>Capital (Bank)</h3>
+                <div className="bank-sidebar__title">
+                    <span className="bank-sidebar__icon" aria-hidden="true">
+                        💰
+                    </span>
+                    <div>
+                        <h3>Capital disponible</h3>
+                        <p>Usamos tu bank para calcular las apuestas sugeridas.</p>
+                    </div>
+                </div>
                 <button
                     type="button"
                     className="bank-sidebar__close"
                     onClick={() => setIsSidebarOpen(false)}
                 >
-                    <MdClose aria-hidden="true" />
                     <span className="sr-only">Cerrar panel de bank</span>
+                    <MdClose aria-hidden="true" />
                 </button>
             </div>
 
-            <div className="bank-sidebar__group">
-                <label htmlFor="bank-input">Capital disponible</label>
-                <div className="bank-sidebar__control">
-                    <input
-                        id="bank-input"
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        step={10}
-                        value={Number.isFinite(bank) ? bank : 0}
-                        onChange={(event) =>
-                            onBankChange(
-                                Math.max(0, Number.parseFloat(event.target.value) || 0)
-                            )
-                        }
-                    />
-                    <span aria-hidden="true">€</span>
+            <div className="bank-sidebar__section">
+                <div className="bank-sidebar__section-header">
+                    <span className="bank-sidebar__section-title">Capital (Bank)</span>
+                    <div className="bank-sidebar__input-group">
+                        <input
+                            id="bank-input"
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step={10}
+                            value={Number.isFinite(bank) ? bank : 0}
+                            onChange={(event) =>
+                                onBankChange(
+                                    Math.max(0, Number.parseFloat(event.target.value) || 0)
+                                )
+                            }
+                            aria-describedby="bank-helper"
+                        />
+                        <span aria-hidden="true" className="bank-sidebar__currency">
+                            €
+                        </span>
+                    </div>
                 </div>
-            </div>
 
-            <div
-                className="bank-sidebar__actions"
-                role="group"
-                aria-label="Atajos para ajustar el bank"
-            >
-                {[ -10, 10, 50, 100 ].map((delta) => (
-                    <button
-                        key={delta}
-                        type="button"
-                        onClick={() => handleAdjust(delta)}
-                        className="bank-sidebar__button"
-                    >
-                        {delta > 0 ? `+${delta}€` : `${delta}€`}
-                    </button>
-                ))}
+                <div
+                    className="bank-sidebar__actions"
+                    role="group"
+                    aria-label="Atajos para ajustar el bank"
+                >
+                    {[ -10, 10, 50, 100 ].map((delta) => (
+                        <button
+                            key={delta}
+                            type="button"
+                            onClick={() => handleAdjust(delta)}
+                            className="bank-sidebar__button"
+                        >
+                            {delta > 0 ? `+${delta}€` : `${delta}€`}
+                        </button>
+                    ))}
+                </div>
             </div>
         </aside>
     );
