@@ -3,8 +3,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
-
-import LogoutButton from "../components/LogoutButton";
 import ProfileCard from "./components/ProfileCard";
 import PasswordForm, { type PasswordFormValues } from "./components/PasswordForm";
 import StatusBanner from "./components/StatusBanner";
@@ -243,10 +241,6 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
                 Administra la información asociada a tu cuenta, ajusta la seguridad y revisa el estado de tu suscripción.
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <LogoutButton />
           </div>
         </header>
 
