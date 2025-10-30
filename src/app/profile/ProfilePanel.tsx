@@ -109,10 +109,18 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       return;
     }
 
-    if (formValues.newPassword.length < 12) {
+    const newPassword = formValues.newPassword;
+    const passwordMeetsRequirements =
+      newPassword.length >= 12 &&
+      /[a-z]/.test(newPassword) &&
+      /[A-Z]/.test(newPassword) &&
+      /\d/.test(newPassword);
+
+    if (!passwordMeetsRequirements) {
       setFeedback({
-        type: "warning",
-        message: "Utiliza una contraseña de al menos 8 caracteres para mayor seguridad.",
+        type: "error",
+        message:
+          "La contraseña debe tener al menos 12 caracteres e incluir al menos una letra minúscula, una mayúscula y un número.",
       });
       return;
     }
@@ -193,27 +201,45 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
     setIsDeletingAccount(true);
 
     try {
-      const { data, error: deleteError } = await supabase.functions.invoke(
-        DELETE_ACCOUNT_FUNCTION,
-        {
-          body: {
-            user_id: user.id,
-          },
-        }
-      );
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-      if (deleteError) {
-        throw new Error(deleteError.message || "No se pudo eliminar la cuenta.");
+      if (sessionError) {
+        throw new Error(sessionError.message || "No se pudo verificar la sesión actual.");
+      }
+
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error("No se pudo validar tu sesión para eliminar la cuenta.");
+      }
+
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const errorMessage =
+          typeof payload?.error === "string" && payload.error.length > 0
+            ? payload.error
+            : "No se pudo eliminar la cuenta.";
+        throw new Error(errorMessage);
       }
 
       if (
-        data &&
-        typeof data === "object" &&
-        "error" in data &&
-        data.error &&
-        typeof data.error === "string"
+        payload &&
+        typeof payload === "object" &&
+        "error" in payload &&
+        payload.error &&
+        typeof payload.error === "string"
       ) {
-        throw new Error(data.error);
+        throw new Error(payload.error);
       }
 
       setFeedback({
@@ -402,8 +428,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
             tone="danger"
           >
             <p className="mb-5 text-sm leading-relaxed text-[var(--color-danger-text)]">
-              Antes de continuar descarga tus reportes y asegúrate de no tener operaciones pendientes. Una vez
-              confirmes, la información se eliminará de forma permanente.
+              Esta acción eliminará tu cuenta y tu método de pago, y no podrás restaurarlos posteriormente.
             </p>
             <button
               type="button"
