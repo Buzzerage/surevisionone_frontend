@@ -70,7 +70,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No puedes eliminar esta cuenta." }, { status: 403 });
     }
 
-    const deleteResponse = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
+    const deleteFunctionSlug =
+      process.env.NEXT_PUBLIC_SUPABASE_DELETE_ACCOUNT_FUNCTION ??
+      process.env.SUPABASE_DELETE_ACCOUNT_FUNCTION ??
+      "delete_user";
+
+    const deleteResponse = await fetch(`${supabaseUrl}/functions/v1/${deleteFunctionSlug}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
