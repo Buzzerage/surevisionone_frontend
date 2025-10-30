@@ -18,9 +18,6 @@ const emptyForm: PasswordFormValues = {
   confirmPassword: "",
 };
 
-const DELETE_ACCOUNT_FUNCTION =
-  process.env.NEXT_PUBLIC_SUPABASE_DELETE_ACCOUNT_FUNCTION ?? "delete-account";
-
 type ProfilePanelProps = {
   user: User;
 };
