@@ -213,20 +213,35 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         throw new Error("No se pudo validar tu sesión para eliminar la cuenta.");
       }
 
-      const response = await fetch("/api/account/delete", {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+      if (!supabaseUrl) {
+        throw new Error("No se pudo contactar con el servicio de autenticación. Inténtalo más tarde.");
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ userId: user.id }),
       });
 
-      const payload = await response.json().catch(() => ({}));
+      const responseHasJson = response.headers
+        .get("content-type")
+        ?.toLowerCase()
+        .includes("application/json");
+
+      const payload = responseHasJson ? await response.json().catch(() => null) : null;
 
       if (!response.ok) {
         const errorMessage =
-          typeof payload?.error === "string" && payload.error.length > 0
+          payload &&
+          typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof payload.error === "string" &&
+          payload.error.length > 0
             ? payload.error
             : "No se pudo eliminar la cuenta.";
         throw new Error(errorMessage);
@@ -235,11 +250,15 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       if (
         payload &&
         typeof payload === "object" &&
-        "error" in payload &&
-        payload.error &&
-        typeof payload.error === "string"
+        payload !== null &&
+        "success" in payload &&
+        payload.success === false
       ) {
-        throw new Error(payload.error);
+        const errorMessage =
+          "error" in payload && typeof payload.error === "string" && payload.error.length > 0
+            ? payload.error
+            : "No se pudo eliminar la cuenta.";
+        throw new Error(errorMessage);
       }
 
       setFeedback({
