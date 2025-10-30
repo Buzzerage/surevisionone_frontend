@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 // Rutas que requieren autenticación
-const PROTECTED_ROUTES = ["/arbitrages"];
+const PROTECTED_ROUTES = ["/panel"];
 
 // Inicializa el cliente de Supabase con tu clave ANON
 const supabase = createClient(
@@ -56,7 +56,7 @@ export async function middleware(req: NextRequest) {
   }
 }
 
-// Solo se ejecuta en rutas que empiecen por /arbitrages
+// Solo se ejecuta en rutas que empiecen por /panel
 export const config = {
-  matcher: ["/arbitrages/:path*"],
+  matcher: ["/panel/:path*"],
 };

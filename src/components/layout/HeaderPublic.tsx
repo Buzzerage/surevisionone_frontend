@@ -46,7 +46,7 @@ export default function HeaderPublic({ session, onLogin }: HeaderPublicProps) {
             </button>
           ) : (
             <button
-              onClick={() => router.push("/arbitrages")}
+              onClick={() => router.push("/panel")}
               className="px-4 py-2 font-medium text-sm text-white bg-[var(--color-accent-primary)] hover:bg-[#0ea5e9] rounded-lg transition-colors"
             >
               Ir al panel
