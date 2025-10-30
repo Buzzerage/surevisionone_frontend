@@ -1,13 +1,8 @@
 "use client";
 
 import React from "react";
-import {
-    FiFilter,
-    FiRotateCw,
-    FiChevronUp,
-    FiChevronDown,
-    FiArrowLeftRight,
-} from "react-icons/fi";
+import { FiFilter, FiRotateCw, FiChevronUp, FiChevronDown, FiX } from "react-icons/fi";
+import type { SportFilterOption } from "../../utils/constants";
 
 interface SelectOption {
     value: string;
@@ -28,8 +23,11 @@ interface FiltersToolbarProps {
     onSortOptionChange: (value: string) => void;
     onReset: () => void;
     hasActiveFilters: boolean;
-    bank: number;
-    onBankChange: React.Dispatch<React.SetStateAction<number>>;
+    sportOptions: SportFilterOption[];
+    selectedSport: string;
+    onSportChange: (value: string) => void;
+    isMobileOpen: boolean;
+    onCloseMobile: () => void;
 }
 
 const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
@@ -46,8 +44,11 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     onSortOptionChange,
     onReset,
     hasActiveFilters,
-    bank,
-    onBankChange,
+    sportOptions,
+    selectedSport,
+    onSportChange,
+    isMobileOpen,
+    onCloseMobile,
 }) => {
     const handleStep = (direction: "up" | "down") => {
         const current = Number.parseFloat(minProfit.replace(",", "."));
@@ -66,12 +67,24 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     };
 
     return (
-        <section className="filters-toolbar" aria-label="Filtros avanzados">
+        <section
+            id="advanced-filters"
+            className={`filters-toolbar${isMobileOpen ? " filters-toolbar--open" : ""}`}
+            aria-label="Filtros avanzados"
+        >
             <header className="filters-toolbar__header">
                 <div className="filters-toolbar__title">
                     <FiFilter aria-hidden="true" />
                     <span>Refinar resultados</span>
                 </div>
+                <button
+                    type="button"
+                    className="filters-toolbar__close"
+                    onClick={onCloseMobile}
+                >
+                    <span className="sr-only">Cerrar filtros</span>
+                    <FiX aria-hidden="true" />
+                </button>
                 <button
                     type="button"
                     className="filters-toolbar__reset"
@@ -85,6 +98,35 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
 
             <div className="filters-toolbar__body">
                 <div className="filters-toolbar__grid">
+                    <div className="filters-toolbar__group filters-toolbar__group--sports">
+                        <span className="filters-toolbar__label">Deporte</span>
+                        <div
+                            className="filters-toolbar__chip-list"
+                            role="listbox"
+                            aria-label="Filtrar por deporte"
+                        >
+                            {sportOptions.map((option) => {
+                                const Icon = option.icon;
+                                const isActive = option.key === selectedSport;
+                                return (
+                                    <button
+                                        key={option.key}
+                                        type="button"
+                                        className={`filters-toolbar__chip${
+                                            isActive ? " filters-toolbar__chip--active" : ""
+                                        }`}
+                                        onClick={() => onSportChange(option.key)}
+                                        role="option"
+                                        aria-selected={isActive}
+                                    >
+                                        <Icon aria-hidden="true" />
+                                        <span>{option.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     <div className="filters-toolbar__group">
                         <label htmlFor="filter-bookmaker" className="filters-toolbar__label">
                             Casa de apuesta
@@ -179,79 +221,6 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                         </div>
                     </div>
                 </div>
-
-                <div className="filters-toolbar__divider" aria-hidden="true" />
-
-                <aside className="filters-toolbar__aside" aria-label="Gestión de capital">
-                    <div className="filters-toolbar__aside-header">
-                        <span className="filters-toolbar__aside-icon" aria-hidden="true">
-                            💰
-                        </span>
-                        <div>
-                            <h3>Capital disponible</h3>
-                            <p>Introduce tu bank para ajustar los stakes sugeridos.</p>
-                        </div>
-                    </div>
-                    <div className="filters-toolbar__bank-group">
-                        <label htmlFor="filter-bank" className="filters-toolbar__label">
-                            Capital (Bank)
-                        </label>
-                        <div className="filters-toolbar__bank-control">
-                            <input
-                                id="filter-bank"
-                                type="number"
-                                min={0}
-                                step={10}
-                                value={bank}
-                                onChange={(event) =>
-                                    onBankChange(
-                                        Math.max(0, Number.parseFloat(event.target.value) || 0)
-                                    )
-                                }
-                            />
-                            <span aria-hidden="true">€</span>
-                        </div>
-                        <p className="filters-toolbar__bank-helper">
-                            Ajusta el importe para adaptar la exposición recomendada a tu capital.
-                        </p>
-                        <div className="filters-toolbar__bank-actions" role="group" aria-label="Ajustar capital">
-                            <button
-                                type="button"
-                                onClick={() => onBankChange(Math.max(0, bank - 10))}
-                                className="filters-toolbar__bank-button"
-                            >
-                                -10€
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => onBankChange(bank + 10)}
-                                className="filters-toolbar__bank-button"
-                            >
-                                +10€
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => onBankChange(bank + 50)}
-                                className="filters-toolbar__bank-button"
-                            >
-                                +50€
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => onBankChange(bank + 100)}
-                                className="filters-toolbar__bank-button"
-                            >
-                                +100€
-                            </button>
-                        </div>
-                        <div className="filters-toolbar__bank-summary">
-                            <FiArrowLeftRight aria-hidden="true" />
-                            <span>
-                                Combina los atajos y el valor manual para simular distintos escenarios de stake.
-                            </span>
-                        </div>
-                    </div>
-                </aside>
             </div>
         </section>
     );
