@@ -4,10 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
-
 import { supabase } from "@/lib/supabase/client";
-
-import LogoutButton from "../components/LogoutButton";
 import ProfileCard from "./components/ProfileCard";
 import PasswordForm, { type PasswordFormValues } from "./components/PasswordForm";
 import StatusBanner from "./components/StatusBanner";
@@ -20,6 +17,9 @@ const emptyForm: PasswordFormValues = {
   newPassword: "",
   confirmPassword: "",
 };
+
+const DELETE_ACCOUNT_FUNCTION =
+  process.env.NEXT_PUBLIC_SUPABASE_DELETE_ACCOUNT_FUNCTION ?? "delete-account";
 
 type ProfilePanelProps = {
   user: User;
@@ -296,7 +296,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
           <div className="flex items-center gap-3">
             {/* 🔙 Botón de retroceso */}
             <button
-              onClick={() => router.push("/arbitrages")}
+              onClick={() => router.push("/panel")}
               className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-accent)] transition-all hover:bg-[var(--color-hover-bg)] hover:scale-[1.03]"
             >
               <svg
@@ -327,10 +327,6 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
                 Administra la información asociada a tu cuenta, ajusta la seguridad y revisa el estado de tu suscripción.
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <LogoutButton />
           </div>
         </header>
 
