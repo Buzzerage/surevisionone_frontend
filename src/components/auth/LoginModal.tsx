@@ -56,7 +56,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
       setSuccess(true);
       setTimeout(() => {
         onClose?.();
-        router.push("/arbitrages");
+        router.push("/panel");
       }, 1200);
     } catch (err) {
       const authError = err as AuthError | Error;
