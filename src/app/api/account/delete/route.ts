@@ -21,6 +21,15 @@ async function readJsonBody(request: Request): Promise<DeleteAccountRequestBody 
   return null;
 }
 
+export function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      Allow: "OPTIONS, POST",
+    },
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const authorization = request.headers.get("authorization");
