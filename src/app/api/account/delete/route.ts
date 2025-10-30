@@ -34,11 +34,10 @@ export async function POST(request: Request) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json(
-        { error: "Faltan credenciales del servidor para completar la solicitud." },
+        { error: "No se pudo completar la solicitud. Falta la configuración del proyecto." },
         { status: 500 }
       );
     }
@@ -62,30 +61,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No puedes eliminar esta cuenta." }, { status: 403 });
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        persistSession: false,
+    const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      method: "DELETE",
+      headers: {
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${token}`,
       },
     });
-
-    const { error: revokeError } = await adminClient.auth.admin.invalidateUserRefreshTokens(
-      userData.user.id
-    );
-
-    if (revokeError && process.env.NODE_ENV !== "production") {
-      console.warn("No se pudieron invalidar los tokens de actualización antes de eliminar la cuenta", revokeError);
-    }
-
-    const deleteResponse = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users/${userData.user.id}?should_soft_delete=false`,
-      {
-        method: "DELETE",
-        headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
-        },
-      }
-    );
 
     let deletePayload: unknown = null;
     const responseHasJson = deleteResponse.headers
