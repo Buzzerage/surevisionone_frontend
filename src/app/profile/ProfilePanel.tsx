@@ -213,18 +213,13 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         throw new Error("No se pudo validar tu sesión para eliminar la cuenta.");
       }
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-      if (!supabaseUrl) {
-        throw new Error("No se pudo contactar con el servicio de autenticación. Inténtalo más tarde.");
-      }
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
+      const response = await fetch("/api/account/delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
+        body: JSON.stringify({ userId: sessionData.session.user.id }),
       });
 
       const responseHasJson = response.headers
