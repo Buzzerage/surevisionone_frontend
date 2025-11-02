@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Loader, Lock, Mail, X } from "lucide-react";
+import { Loader, Lock, Mail, RefreshCw, ShieldCheck, X } from "lucide-react";
 import type { AuthError } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase/client";
@@ -15,10 +15,10 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isRegister, setIsRegister] = useState(false);
+  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
 
   // animación de entrada
@@ -45,15 +45,37 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     setLoading(true);
 
     try {
-      const result = isRegister
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
+      if (mode === "forgot") {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
 
-      if (result.error) {
-        throw result.error;
+        if (resetError) {
+          throw resetError;
+        }
+
+        setSuccessMessage(
+          "Te hemos enviado un enlace seguro para restablecer tu contraseña. Revisa tu bandeja de entrada."
+        );
+        return;
       }
 
-      setSuccess(true);
+      if (mode === "register") {
+        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        if (signUpError) {
+          throw signUpError;
+        }
+
+        setSuccessMessage(
+          "Cuenta creada. Revisa tu email y valida tu cuenta para poder acceder de forma segura al panel."
+        );
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        throw signInError;
+      }
+
+      setSuccessMessage("Sesión iniciada correctamente. Redirigiendo al panel...");
       setTimeout(() => {
         onClose?.();
         router.push("/panel");
@@ -66,7 +88,8 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     }
   };
 
-  const isTransitioning = loading || success;
+  const isRegister = mode === "register";
+  const isForgot = mode === "forgot";
 
   return (
     <div
@@ -84,26 +107,34 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-blue-400"
-          disabled={isTransitioning}
+          disabled={loading}
         >
           <X className="w-6 h-6" />
         </button>
 
-        {isTransitioning ? (
-          <div className="flex flex-col items-center py-10">
-            {success ? (
-              <CheckCircle className="w-16 h-16 text-green-500 animate-in fade-in zoom-in" />
-            ) : (
-              <Loader className="w-16 h-16 text-blue-500 animate-spin" />
-            )}
-            <p className="mt-4 text-lg text-white">
-              {success ? "Sesión iniciada correctamente" : "Procesando..."}
-            </p>
+        {successMessage ? (
+          <div className="flex flex-col items-center py-10 text-center space-y-4">
+            <ShieldCheck className="w-16 h-16 text-green-500" />
+            <p className="text-lg text-[var(--color-text-accent)]">{successMessage}</p>
+            <button
+              type="button"
+              className="text-sm text-blue-400 hover:text-blue-300"
+              onClick={() => {
+                setSuccessMessage(null);
+                if (mode === "login") {
+                  onClose?.();
+                }
+              }}
+            >
+              {mode === "login"
+                ? "Continuar"
+                : "Entendido, revisaré mi correo"}
+            </button>
           </div>
         ) : (
           <>
             <h2 className="text-2xl font-bold text-center mb-6 text-[var(--color-text-accent)]">
-              {isRegister ? "Crear cuenta" : "Iniciar sesión"}
+              {isForgot ? "Recuperar contraseña" : isRegister ? "Crear cuenta" : "Iniciar sesión"}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -119,40 +150,85 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 />
               </div>
 
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="password"
-                  placeholder="Contraseña"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
+              {!isForgot && (
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              )}
+
+              {isForgot && (
+                <p className="text-sm text-[var(--color-text-secondary)] text-center">
+                  Introduce tu correo electrónico para enviarte un enlace seguro de restablecimiento.
+                </p>
+              )}
 
               {error && <p className="text-center text-red-500">{error}</p>}
 
               <button
                 type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold flex items-center justify-center gap-2"
                 disabled={loading}
               >
                 {loading ? (
-                  <Loader className="w-5 h-5 mx-auto animate-spin" />
+                  <Loader className="w-5 h-5 animate-spin" />
+                ) : isForgot ? (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    Enviar enlace de recuperación
+                  </>
+                ) : isRegister ? (
+                  "Registrarse"
                 ) : (
-                  isRegister ? "Registrarse" : "Entrar"
+                  "Entrar"
                 )}
               </button>
             </form>
 
-            <div className="text-center mt-4">
-              <button
-                onClick={() => setIsRegister(!isRegister)}
-                className="text-sm text-blue-400 hover:text-blue-300"
-              >
-                {isRegister ? "¿Ya tienes cuenta? Inicia sesión" : "¿Aún no tienes cuenta? Regístrate"}
-              </button>
+            <div className="flex flex-col items-center gap-2 mt-6 text-center">
+              {!isForgot && (
+                <button
+                  onClick={() => setMode(isRegister ? "login" : "register")}
+                  className="text-sm text-blue-400 hover:text-blue-300"
+                  type="button"
+                >
+                  {isRegister ? "¿Ya tienes cuenta? Inicia sesión" : "¿Aún no tienes cuenta? Regístrate"}
+                </button>
+              )}
+
+              {!isForgot && (
+                <button
+                  onClick={() => {
+                    setMode("forgot");
+                    setPassword("");
+                    setError(null);
+                  }}
+                  className="text-sm text-blue-400 hover:text-blue-300"
+                  type="button"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              )}
+
+              {isForgot && (
+                <button
+                  onClick={() => {
+                    setMode("login");
+                    setError(null);
+                  }}
+                  className="text-sm text-blue-400 hover:text-blue-300"
+                  type="button"
+                >
+                  Volver a iniciar sesión
+                </button>
+              )}
             </div>
           </>
         )}
