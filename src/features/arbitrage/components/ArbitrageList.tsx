@@ -40,6 +40,7 @@ export default function ArbitrageList() {
   const [minProfit, setMinProfit] = useState<string>("");
   const [betType, setBetType] = useState<string>("ALL");
   const [sortOption, setSortOption] = useState<string>(DEFAULT_SORT);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isBankOpen, setIsBankOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const isProfitSort = sortOption.startsWith("profit");
@@ -178,8 +179,9 @@ export default function ArbitrageList() {
     const hasProfit = minProfit.trim().length > 0;
     const hasType = betType !== "ALL";
     const hasSport = selectedSport !== ALL_SPORT_FILTER_KEY;
-    return hasBookmaker || hasProfit || hasType || hasSport;
-  }, [selectedBookmaker, minProfit, betType, selectedSport]);
+    const hasSearch = searchQuery.trim().length > 0;
+    return hasBookmaker || hasProfit || hasType || hasSport || hasSearch;
+  }, [selectedBookmaker, minProfit, betType, selectedSport, searchQuery]);
 
   const handleResetFilters = useCallback(() => {
     setSelectedBookmaker("All");
@@ -187,6 +189,7 @@ export default function ArbitrageList() {
     setBetType("ALL");
     setSortOption(DEFAULT_SORT);
     setSelectedSport(ALL_SPORT_FILTER_KEY);
+    setSearchQuery("");
   }, []);
 
   const matchesBookmaker = useCallback((arb: Arbitrage, bookmaker: string) => {
@@ -201,10 +204,65 @@ export default function ArbitrageList() {
       .map((value) => (value as string).toLowerCase())
       .some((value) => value.includes(normalized));
   }, []);
+  const normalizeSearchText = useCallback((value: string) =>
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim(),
+  []);
+
+  const matchesSearchQuery = useCallback(
+    (arb: Arbitrage, query: string) => {
+      if (!query) {
+        return true;
+      }
+
+      const searchableStrings: string[] = [];
+      const visited = new Set<unknown>();
+
+      const visit = (value: unknown) => {
+        if (!value || visited.has(value)) {
+          return;
+        }
+
+        if (typeof value === "string") {
+          searchableStrings.push(value);
+          return;
+        }
+
+        if (Array.isArray(value)) {
+          value.forEach((item) => visit(item));
+          return;
+        }
+
+        if (typeof value === "object") {
+          visited.add(value);
+          Object.entries(value as Record<string, unknown>).forEach(
+            ([key, nestedValue]) => {
+              if (key.toLowerCase().includes("bookmaker")) {
+                return;
+              }
+              visit(nestedValue);
+            }
+          );
+        }
+      };
+
+      visit(arb);
+
+      const normalizedQuery = normalizeSearchText(query);
+      return searchableStrings.some((text) =>
+        normalizeSearchText(text).includes(normalizedQuery)
+      );
+    },
+    [normalizeSearchText]
+  );
 
   const processedArbitrages = useMemo(() => {
     const minProfitValue = Number.parseFloat(minProfit.replace(",", "."));
     const shouldFilterByProfit = !Number.isNaN(minProfitValue);
+    const normalizedQuery = normalizeSearchText(searchQuery);
 
     let list = arbitrages;
 
@@ -224,6 +282,10 @@ export default function ArbitrageList() {
 
     if (betType !== "ALL") {
       list = list.filter((arb) => arb.type === betType);
+    }
+
+    if (normalizedQuery) {
+      list = list.filter((arb) => matchesSearchQuery(arb, normalizedQuery));
     }
 
     const sorted = [...list];
@@ -252,6 +314,9 @@ export default function ArbitrageList() {
     minProfit,
     betType,
     sortOption,
+    normalizeSearchText,
+    searchQuery,
+    matchesSearchQuery,
   ]);
 
   const profitStream = useMemo(() => {
@@ -413,6 +478,8 @@ export default function ArbitrageList() {
             onSportChange={setSelectedSport}
             isMobileOpen={isFiltersOpen}
             onCloseMobile={() => setIsFiltersOpen(false)}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
           />
 
           <div className="arbitrage-panel">
