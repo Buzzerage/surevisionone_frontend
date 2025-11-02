@@ -28,6 +28,8 @@ interface FiltersToolbarProps {
     onSportChange: (value: string) => void;
     isMobileOpen: boolean;
     onCloseMobile: () => void;
+    searchQuery: string;
+    onSearchQueryChange: (value: string) => void;
 }
 
 const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
@@ -49,6 +51,8 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     onSportChange,
     isMobileOpen,
     onCloseMobile,
+    searchQuery,
+    onSearchQueryChange,
 }) => {
     const handleStep = (direction: "up" | "down") => {
         const current = Number.parseFloat(minProfit.replace(",", "."));
@@ -124,6 +128,22 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                                     </button>
                                 );
                             })}
+                        </div>
+                    </div>
+
+                    <div className="filters-toolbar__group">
+                        <label htmlFor="filter-search" className="filters-toolbar__label">
+                            Buscar eventos o equipos
+                        </label>
+                        <div className="filters-toolbar__control">
+                            <input
+                                id="filter-search"
+                                type="search"
+                                autoComplete="off"
+                                placeholder="Ej. Real Madrid"
+                                value={searchQuery}
+                                onChange={(event) => onSearchQueryChange(event.target.value)}
+                            />
                         </div>
                     </div>
 
