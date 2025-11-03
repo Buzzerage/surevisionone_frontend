@@ -10,7 +10,7 @@ import {
 
 import {
   ALL_SPORT_FILTER_KEY,
-  BASE_SPORT_FILTERS,
+  getBaseSportFilters,
   resolveSportFilterOption,
   type SportFilterOption,
 } from "../utils/constants";
@@ -18,6 +18,8 @@ import BankSidebar from "./layout/BankSidebar";
 import FiltersToolbar from "./layout/FiltersToolbar";
 import ArbitrageCard from "./cards/ArbitrageCard";
 import type { Arbitrage, StakeResult } from "../utils/types";
+import { useLanguageContext } from "@/providers/LanguageProvider";
+import { useAppTranslations } from "@/lib/i18n";
 
 type SelectOption = { value: string; label: string };
 
@@ -28,10 +30,47 @@ const matchLabel = (arb: Arbitrage) => `${arb.home_team} vs ${arb.away_team}`;
 const getArbitrageKey = (arb: Arbitrage) =>
   `${arb.home_team} vs ${arb.away_team} @ ${arb.match_date}`;
 
-const collator = new Intl.Collator("es", { sensitivity: "base" });
-
 export default function ArbitrageList() {
   const { arbitrages, status, lastDelta } = useArbitrageRealtime();
+  const { language } = useLanguageContext();
+  const arbitrageCopy = useAppTranslations("arbitrage");
+  const {
+    currency,
+    mobile,
+    defaults,
+    sortOptions: sortCopy,
+    filtersToolbar: filtersCopy,
+    bankSidebar: bankCopy,
+    list: listCopy,
+    card: cardCopy,
+  } = arbitrageCopy;
+  const collator = useMemo(
+    () =>
+      new Intl.Collator(currency.locale, {
+        sensitivity: "base",
+      }),
+    [currency.locale]
+  );
+  const baseFilters = useMemo(() => getBaseSportFilters(language), [language]);
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(currency.locale, {
+        style: "currency",
+        currency: currency.currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    [currency.currency, currency.locale]
+  );
+  const formatCurrencyValue = useCallback(
+    (value?: number | null) => {
+      if (typeof value !== "number" || Number.isNaN(value)) {
+        return "--";
+      }
+      return currencyFormatter.format(value);
+    },
+    [currencyFormatter]
+  );
   const [showOverlay, setShowOverlay] = useState(true);
   const [fadeClass, setFadeClass] = useState("fade-in");
   const [bank, setBank] = useState<number>(100);
@@ -44,6 +83,17 @@ export default function ArbitrageList() {
   const [isBankOpen, setIsBankOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const isProfitSort = sortOption.startsWith("profit");
+  const cardLabels = useMemo(
+    () => ({
+      homePrefix: cardCopy.homePrefix,
+      awayPrefix: cardCopy.awayPrefix,
+      ariaLabel: (id: string | number) =>
+        cardCopy.ariaLabel.replace("{{id}}", String(id)),
+      betInfo: cardCopy.betInfo,
+      newBadge: cardCopy.newBadge,
+    }),
+    [cardCopy]
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -90,20 +140,23 @@ export default function ArbitrageList() {
   }, [status, arbitrages]);
 
   const sportOptions = useMemo(() => {
-    const options = new Map<string, SportFilterOption>();
-    options.set(ALL_SPORT_FILTER_KEY, BASE_SPORT_FILTERS[0]);
+    const dynamicOptions = new Map<string, SportFilterOption>();
 
     arbitrages.forEach((arb) => {
-      const option = resolveSportFilterOption(arb.sport_key, arb.sport);
-      if (!options.has(option.key)) {
-        options.set(option.key, option);
+      const option = resolveSportFilterOption(arb.sport_key, arb.sport, language);
+      if (!dynamicOptions.has(option.key)) {
+        dynamicOptions.set(option.key, option);
       }
     });
 
-    const [allOption, ...dynamicOptions] = Array.from(options.values());
-    dynamicOptions.sort((a, b) => collator.compare(a.name, b.name));
-    return [allOption, ...dynamicOptions];
-  }, [arbitrages]);
+    const allOption =
+      baseFilters.find((filter) => filter.key === ALL_SPORT_FILTER_KEY) ?? baseFilters[0];
+
+    const sortedOptions = Array.from(dynamicOptions.values());
+    sortedOptions.sort((a, b) => collator.compare(a.name, b.name));
+
+    return allOption ? [allOption, ...sortedOptions] : sortedOptions;
+  }, [arbitrages, baseFilters, language, collator]);
 
   useEffect(() => {
     if (!sportOptions.some((option) => option.key === selectedSport)) {
@@ -114,8 +167,8 @@ export default function ArbitrageList() {
   const activeSportOption = useMemo(
     () =>
       sportOptions.find((option) => option.key === selectedSport) ??
-      BASE_SPORT_FILTERS[0],
-    [sportOptions, selectedSport]
+      baseFilters[0],
+    [sportOptions, selectedSport, baseFilters]
   );
 
   const bookmakerOptions = useMemo<SelectOption[]>(() => {
@@ -137,10 +190,10 @@ export default function ArbitrageList() {
     );
 
     return [
-      { value: "All", label: "Todas las casas" },
+      { value: "All", label: defaults.bookmakerAll },
       ...sorted.map((value) => ({ value, label: value })),
     ];
-  }, [arbitrages]);
+  }, [arbitrages, collator, defaults.bookmakerAll]);
 
   useEffect(() => {
     if (!bookmakerOptions.some((option) => option.value === selectedBookmaker)) {
@@ -159,19 +212,19 @@ export default function ArbitrageList() {
     const sorted = Array.from(set).sort((a, b) => collator.compare(a, b));
 
     return [
-      { value: "ALL", label: "Todos los tipos" },
+      { value: "ALL", label: defaults.betTypesAll },
       ...sorted.map((value) => ({ value, label: value })),
     ];
-  }, [arbitrages]);
+  }, [arbitrages, collator, defaults.betTypesAll]);
 
   const sortOptions = useMemo<SelectOption[]>(
     () => [
-      { value: "profit-desc", label: "Rentabilidad (mayor a menor)" },
-      { value: "profit-asc", label: "Rentabilidad (menor a mayor)" },
-      { value: "match-az", label: "Partido (A-Z)" },
-      { value: "match-za", label: "Partido (Z-A)" },
+      { value: "profit-desc", label: sortCopy.profitDesc },
+      { value: "profit-asc", label: sortCopy.profitAsc },
+      { value: "match-az", label: sortCopy.matchAz },
+      { value: "match-za", label: sortCopy.matchZa },
     ],
-    []
+    [sortCopy.profitDesc, sortCopy.profitAsc, sortCopy.matchAz, sortCopy.matchZa]
   );
 
   const hasActiveFilters = useMemo(() => {
@@ -317,6 +370,7 @@ export default function ArbitrageList() {
     normalizeSearchText,
     searchQuery,
     matchesSearchQuery,
+    collator,
   ]);
 
   const profitStream = useMemo(() => {
@@ -390,7 +444,7 @@ export default function ArbitrageList() {
   );
 
   const renderMatchHeader = (arb: Arbitrage, extraClass = "") => {
-    const sportOption = resolveSportFilterOption(arb.sport_key, arb.sport);
+    const sportOption = resolveSportFilterOption(arb.sport_key, arb.sport, language);
     const SportIcon = sportOption.icon;
 
     return (
@@ -433,6 +487,8 @@ export default function ArbitrageList() {
           onBankChange={setBank}
           isSidebarOpen={isBankOpen}
           setIsSidebarOpen={setIsBankOpen}
+          copy={bankCopy}
+          currencySymbol={currency.symbol}
         />
 
         <main className="content-area">
@@ -445,7 +501,7 @@ export default function ArbitrageList() {
               aria-expanded={isFiltersOpen}
             >
               <span aria-hidden="true">🎛️</span>
-              <span>Filtros</span>
+              <span>{mobile.filters}</span>
             </button>
             <button
               type="button"
@@ -455,7 +511,7 @@ export default function ArbitrageList() {
               aria-expanded={isBankOpen}
             >
               <span aria-hidden="true">💰</span>
-              <span>Bank</span>
+              <span>{mobile.bank}</span>
             </button>
           </div>
 
@@ -480,28 +536,29 @@ export default function ArbitrageList() {
             onCloseMobile={() => setIsFiltersOpen(false)}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
+            copy={filtersCopy}
           />
 
           <div className="arbitrage-panel">
             <h2 className="panel-title">
-              Oportunidades de Arbitraje{" "}
-              {selectedSport !== ALL_SPORT_FILTER_KEY ? `en ${currentSportName}` : ""}
+              {listCopy.heading}
+              {selectedSport !== ALL_SPORT_FILTER_KEY
+                ? ` ${listCopy.sportSuffix} ${currentSportName}`
+                : ""}
             </h2>
 
             {isInitialLoading && (
               <div className="text-center text-gray-400 mt-10">
                 <LoadingCard />
-                <p className="mt-6 text-sm opacity-70">
-                  Cargando arbitrajes en tiempo real...
-                </p>
+                <p className="mt-6 text-sm opacity-70">{listCopy.loadingLive}</p>
               </div>
             )}
 
             {!isInitialLoading && !hasArbitrages && (
               <p className="no-arbs-message">
                 {hasActiveFilters || selectedSport !== ALL_SPORT_FILTER_KEY
-                  ? "No encontramos arbitrajes que coincidan con los filtros seleccionados."
-                  : "No hay oportunidades de arbitraje disponibles en este momento."}
+                  ? listCopy.noResultsFiltered
+                  : listCopy.noResults}
               </p>
             )}
 
@@ -530,6 +587,8 @@ export default function ArbitrageList() {
                               ? "updated"
                               : undefined
                           }
+                          labels={cardLabels}
+                          formatCurrency={formatCurrencyValue}
                         />
                       </div>
                     </div>
@@ -561,6 +620,8 @@ export default function ArbitrageList() {
                               ? "updated"
                               : undefined
                           }
+                          labels={cardLabels}
+                          formatCurrency={formatCurrencyValue}
                         />
                       );
                     })}
@@ -574,7 +635,7 @@ export default function ArbitrageList() {
       {showOverlay && status === "connecting" && (
         <div className={`loading-overlay ${fadeClass}`}>
           <h2 style={{ color: "var(--color-text-accent)", marginBottom: "1.5rem" }}>
-            Cargando arbitrajes...
+            {listCopy.loadingOverlay}
           </h2>
         </div>
       )}

@@ -9,6 +9,25 @@ interface SelectOption {
     label: string;
 }
 
+type FiltersToolbarCopy = {
+    ariaLabel: string;
+    refineResults: string;
+    close: string;
+    reset: string;
+    sportLabel: string;
+    sportAria: string;
+    searchLabel: string;
+    searchPlaceholder: string;
+    bookmakerLabel: string;
+    minProfitLabel: string;
+    minProfitPlaceholder: string;
+    adjustMinProfit: string;
+    incrementMinProfit: string;
+    decrementMinProfit: string;
+    betTypeLabel: string;
+    sortLabel: string;
+};
+
 interface FiltersToolbarProps {
     bookmakerOptions: SelectOption[];
     selectedBookmaker: string;
@@ -30,6 +49,7 @@ interface FiltersToolbarProps {
     onCloseMobile: () => void;
     searchQuery: string;
     onSearchQueryChange: (value: string) => void;
+    copy: FiltersToolbarCopy;
 }
 
 const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
@@ -53,6 +73,7 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     onCloseMobile,
     searchQuery,
     onSearchQueryChange,
+    copy,
 }) => {
     const handleStep = (direction: "up" | "down") => {
         const current = Number.parseFloat(minProfit.replace(",", "."));
@@ -74,19 +95,19 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
         <section
             id="advanced-filters"
             className={`filters-toolbar${isMobileOpen ? " filters-toolbar--open" : ""}`}
-            aria-label="Filtros avanzados"
+            aria-label={copy.ariaLabel}
         >
             <header className="filters-toolbar__header">
                 <div className="filters-toolbar__title">
                     <FiFilter aria-hidden="true" />
-                    <span>Refinar resultados</span>
+                    <span>{copy.refineResults}</span>
                 </div>
                 <button
                     type="button"
                     className="filters-toolbar__close"
                     onClick={onCloseMobile}
                 >
-                    <span className="sr-only">Cerrar filtros</span>
+                    <span className="sr-only">{copy.close}</span>
                     <FiX aria-hidden="true" />
                 </button>
                 <button
@@ -96,18 +117,18 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                     disabled={!hasActiveFilters}
                 >
                     <FiRotateCw aria-hidden="true" />
-                    <span>Reiniciar filtros</span>
+                    <span>{copy.reset}</span>
                 </button>
             </header>
 
             <div className="filters-toolbar__body">
                 <div className="filters-toolbar__grid">
                     <div className="filters-toolbar__group filters-toolbar__group--sports">
-                        <span className="filters-toolbar__label">Deporte</span>
+                        <span className="filters-toolbar__label">{copy.sportLabel}</span>
                         <div
                             className="filters-toolbar__chip-list"
                             role="listbox"
-                            aria-label="Filtrar por deporte"
+                            aria-label={copy.sportAria}
                         >
                             {sportOptions.map((option) => {
                                 const Icon = option.icon;
@@ -133,14 +154,14 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
 
                     <div className="filters-toolbar__group">
                         <label htmlFor="filter-search" className="filters-toolbar__label">
-                            Buscar eventos o equipos
+                            {copy.searchLabel}
                         </label>
                         <div className="filters-toolbar__control">
                             <input
                                 id="filter-search"
                                 type="search"
                                 autoComplete="off"
-                                placeholder="Ej. Real Madrid"
+                                placeholder={copy.searchPlaceholder}
                                 value={searchQuery}
                                 onChange={(event) => onSearchQueryChange(event.target.value)}
                             />
@@ -149,7 +170,7 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
 
                     <div className="filters-toolbar__group">
                         <label htmlFor="filter-bookmaker" className="filters-toolbar__label">
-                            Casa de apuesta
+                            {copy.bookmakerLabel}
                         </label>
                         <div className="filters-toolbar__control">
                             <select
@@ -168,7 +189,7 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
 
                     <div className="filters-toolbar__group">
                         <label htmlFor="filter-profit" className="filters-toolbar__label">
-                            Rentabilidad mínima (%)
+                            {copy.minProfitLabel}
                         </label>
                         <div className="filters-toolbar__control filters-toolbar__control--number">
                             <input
@@ -177,17 +198,17 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                                 min="0"
                                 max="100"
                                 step="0.1"
-                                placeholder="Ej. 2.5"
+                                placeholder={copy.minProfitPlaceholder}
                                 value={minProfit}
                                 onChange={(event) => onMinProfitChange(event.target.value)}
                                 onWheel={handleWheel}
                             />
-                            <div className="filters-toolbar__steppers" role="group" aria-label="Ajustar rentabilidad mínima">
+                            <div className="filters-toolbar__steppers" role="group" aria-label={copy.adjustMinProfit}>
                                 <button
                                     type="button"
                                     className="filters-toolbar__stepper-button"
                                     onClick={() => handleStep("up")}
-                                    aria-label="Incrementar rentabilidad mínima"
+                                    aria-label={copy.incrementMinProfit}
                                 >
                                     <FiChevronUp aria-hidden="true" />
                                 </button>
@@ -195,7 +216,7 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
                                     type="button"
                                     className="filters-toolbar__stepper-button"
                                     onClick={() => handleStep("down")}
-                                    aria-label="Reducir rentabilidad mínima"
+                                    aria-label={copy.decrementMinProfit}
                                 >
                                     <FiChevronDown aria-hidden="true" />
                                 </button>
@@ -205,7 +226,7 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
 
                     <div className="filters-toolbar__group">
                         <label htmlFor="filter-bet-type" className="filters-toolbar__label">
-                            Tipo de arbitraje
+                            {copy.betTypeLabel}
                         </label>
                         <div className="filters-toolbar__control">
                             <select
@@ -224,7 +245,7 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
 
                     <div className="filters-toolbar__group">
                         <label htmlFor="filter-sort" className="filters-toolbar__label">
-                            Ordenar por
+                            {copy.sortLabel}
                         </label>
                         <div className="filters-toolbar__control">
                             <select
@@ -246,4 +267,5 @@ const FiltersToolbar: React.FC<FiltersToolbarProps> = ({
     );
 };
 
+export type { FiltersToolbarCopy };
 export default FiltersToolbar;

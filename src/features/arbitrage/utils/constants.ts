@@ -11,6 +11,10 @@ import {
   MdSports,
 } from "react-icons/md";
 
+import type { LanguageCode } from "@/lib/i18n/language";
+import { getTranslations } from "@/lib/i18n";
+import type { AppTranslations } from "@/lib/i18n/translations";
+
 type SportMatcher = (sportKey?: string | null, sportName?: string | null) => boolean;
 
 export type SportFilterOption = {
@@ -33,74 +37,103 @@ const createMatcher = (aliases: string[]): SportMatcher => {
 
 export const ALL_SPORT_FILTER_KEY = "All";
 
-// Lista de deportes con claves en inglés (minúsculas) para el filtrado
-export const BASE_SPORT_FILTERS: SportFilterOption[] = [
+type SportLabelKey = keyof AppTranslations["arbitrage"]["sports"];
+
+type SportDefinition = {
+  key: string;
+  icon: IconType;
+  aliases?: string[];
+  translationKey: SportLabelKey;
+};
+
+const SPORT_DEFINITIONS: SportDefinition[] = [
   {
-    name: "Todos",
-    icon: MdList,
     key: ALL_SPORT_FILTER_KEY,
-    matcher: () => true,
+    icon: MdList,
+    translationKey: "all",
   },
   {
-    name: "Fútbol",
-    icon: MdSportsSoccer,
     key: "football",
-    matcher: createMatcher(["football", "soccer"]),
+    icon: MdSportsSoccer,
+    aliases: ["football", "soccer"],
+    translationKey: "football",
   },
   {
-    name: "Baloncesto",
-    icon: MdSportsBasketball,
     key: "basketball",
-    matcher: createMatcher(["basketball"]),
+    icon: MdSportsBasketball,
+    aliases: ["basketball"],
+    translationKey: "basketball",
   },
   {
-    name: "Tenis",
-    icon: MdSportsTennis,
     key: "tennis",
-    matcher: createMatcher(["tennis"]),
+    icon: MdSportsTennis,
+    aliases: ["tennis"],
+    translationKey: "tennis",
   },
   {
-    name: "Voleibol",
-    icon: MdSportsVolleyball,
     key: "volleyball",
-    matcher: createMatcher(["volleyball"]),
+    icon: MdSportsVolleyball,
+    aliases: ["volleyball"],
+    translationKey: "volleyball",
   },
   {
-    name: "Hockey",
-    icon: MdSportsHockey,
     key: "hockey",
-    matcher: createMatcher(["hockey"]),
+    icon: MdSportsHockey,
+    aliases: ["hockey"],
+    translationKey: "hockey",
   },
   {
-    name: "Béisbol",
-    icon: MdSportsBaseball,
     key: "baseball",
-    matcher: createMatcher(["baseball"]),
+    icon: MdSportsBaseball,
+    aliases: ["baseball"],
+    translationKey: "baseball",
   },
   {
-    name: "Rugby",
-    icon: MdSports,
     key: "rugby",
-    matcher: createMatcher(["rugby"]),
+    icon: MdSports,
+    aliases: ["rugby"],
+    translationKey: "rugby",
   },
 ];
 
-const fallbackLabel = (value: string) => {
-  if (!value) return "Otros";
-  return value
+const fallbackLabel = (value: string, language: LanguageCode) => {
+  const labels = getTranslations(language).arbitrage.sports;
+  const base = value
     .replace(/[_-]+/g, " ")
     .split(" ")
     .filter(Boolean)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
+
+  if (!base) {
+    return labels.other;
+  }
+
+  return base;
+};
+
+export const getBaseSportFilters = (
+  language: LanguageCode
+): SportFilterOption[] => {
+  const labels = getTranslations(language).arbitrage.sports;
+  return SPORT_DEFINITIONS.map((definition) => ({
+    key: definition.key,
+    icon: definition.icon,
+    name: labels[definition.translationKey],
+    matcher:
+      definition.key === ALL_SPORT_FILTER_KEY
+        ? () => true
+        : createMatcher(definition.aliases ?? []),
+  }));
 };
 
 export const buildDynamicSportFilter = (
   key: string,
-  name: string
+  name: string,
+  language: LanguageCode
 ): SportFilterOption => ({
   key,
-  name: name || fallbackLabel(key),
+  name: name || fallbackLabel(key, language),
   icon: MdSports,
   matcher: (sportKey?: string | null, sportName?: string | null) => {
     const normalizedKey = key.toLowerCase();
@@ -115,9 +148,11 @@ export const buildDynamicSportFilter = (
 
 export const resolveSportFilterOption = (
   sportKey?: string | null,
-  sportName?: string | null
+  sportName?: string | null,
+  language: LanguageCode = "es"
 ): SportFilterOption => {
-  const match = BASE_SPORT_FILTERS.find(
+  const baseFilters = getBaseSportFilters(language);
+  const match = baseFilters.find(
     (filter) =>
       filter.key !== ALL_SPORT_FILTER_KEY && filter.matcher(sportKey, sportName)
   );
@@ -129,6 +164,6 @@ export const resolveSportFilterOption = (
   const normalizedKey = (sportKey || sportName || "otros")
     .toLowerCase()
     .replace(/\s+/g, "-");
-  const label = sportName?.trim() || fallbackLabel(normalizedKey);
-  return buildDynamicSportFilter(normalizedKey, label);
+  const label = sportName?.trim() || fallbackLabel(normalizedKey, language);
+  return buildDynamicSportFilter(normalizedKey, label, language);
 };

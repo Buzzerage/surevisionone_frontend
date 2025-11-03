@@ -1,11 +1,19 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader, Lock, Mail, RefreshCw, ShieldCheck, X } from "lucide-react";
 import type { AuthError } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase/client";
+import { useLanguageContext } from "@/providers/LanguageProvider";
+import { useAppTranslations } from "@/lib/i18n";
+import {
+  BETTING_REGION_FLAG_ASSETS,
+  BETTING_REGION_OPTIONS,
+  type BettingRegion,
+} from "@/lib/regions/betting";
 
 type LoginModalProps = {
   onClose?: () => void;
@@ -20,8 +28,10 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [bettingRegion, setBettingRegion] = useState<BettingRegion | "">("");
+  const { language } = useLanguageContext();
+  const copy = useAppTranslations("auth");
 
-  // animación de entrada
   useEffect(() => {
     setVisible(true);
     if (typeof document !== "undefined") {
@@ -39,6 +49,11 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     setTimeout(() => onClose?.(), 300);
   }, [onClose]);
 
+  useEffect(() => {
+    setError(null);
+    setBettingRegion("");
+  }, [mode]);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -52,21 +67,47 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           throw resetError;
         }
 
-        setSuccessMessage(
-          "Te hemos enviado un enlace seguro para restablecer tu contraseña. Revisa tu bandeja de entrada."
-        );
+        setSuccessMessage(copy.success.reset);
         return;
       }
 
       if (mode === "register") {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        if (!bettingRegion) {
+          setError(copy.errors.regionRequired);
+          setLoading(false);
+          return;
+        }
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              language,
+              betting_region: bettingRegion,
+            },
+          },
+        });
         if (signUpError) {
           throw signUpError;
         }
 
-        setSuccessMessage(
-          "Cuenta creada. Revisa tu email y valida tu cuenta para poder acceder de forma segura al panel."
-        );
+        const createdUserId = signUpData.user?.id;
+
+        if (createdUserId) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert(
+              { id: createdUserId, language, betting_region: bettingRegion },
+              { onConflict: "id", returning: "minimal" }
+            );
+
+          if (profileError && process.env.NODE_ENV !== "production") {
+            console.warn("No se pudo guardar la región de apuestas en el perfil", profileError);
+          }
+        }
+
+        setSuccessMessage(copy.success.register);
         return;
       }
 
@@ -75,14 +116,14 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         throw signInError;
       }
 
-      setSuccessMessage("Sesión iniciada correctamente. Redirigiendo al panel...");
+      setSuccessMessage(copy.success.login);
       setTimeout(() => {
         onClose?.();
         router.push("/panel");
       }, 1200);
     } catch (err) {
       const authError = err as AuthError | Error;
-      setError(authError.message || "Error al iniciar sesión");
+      setError(authError.message || copy.errors.genericSignIn);
     } finally {
       setLoading(false);
     }
@@ -126,15 +167,13 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 }
               }}
             >
-              {mode === "login"
-                ? "Continuar"
-                : "Entendido, revisaré mi correo"}
+              {mode === "login" ? copy.buttons.continue : copy.buttons.dismiss}
             </button>
           </div>
         ) : (
           <>
             <h2 className="text-2xl font-bold text-center mb-6 text-[var(--color-text-accent)]">
-              {isForgot ? "Recuperar contraseña" : isRegister ? "Crear cuenta" : "Iniciar sesión"}
+              {isForgot ? copy.titles.forgot : isRegister ? copy.titles.register : copy.titles.login}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -142,7 +181,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="email"
-                  placeholder="Correo electrónico"
+                  placeholder={copy.placeholders.email}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white focus:ring-2 focus:ring-blue-500"
@@ -155,7 +194,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="password"
-                    placeholder="Contraseña"
+                    placeholder={copy.placeholders.password}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white focus:ring-2 focus:ring-blue-500"
@@ -164,30 +203,73 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 </div>
               )}
 
+              {isRegister && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">{copy.regionLabel}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {BETTING_REGION_OPTIONS.map((region) => {
+                      const isActive = bettingRegion === region;
+                      return (
+                        <button
+                          key={region}
+                          type="button"
+                          onClick={() => setBettingRegion(region)}
+                          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${
+                            isActive
+                              ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
+                              : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
+                          }`}
+                          aria-label={copy.regionOptions[region]}
+                        >
+                          <span className="flex flex-col items-center gap-1">
+                            <span
+                              className="flex h-12 w-16 items-center justify-center overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-background-secondary)]"
+                              aria-hidden="true"
+                            >
+                              <Image
+                                src={BETTING_REGION_FLAG_ASSETS[region].src}
+                                alt={BETTING_REGION_FLAG_ASSETS[region].alt}
+                                width={64}
+                                height={48}
+                                className="h-12 w-16 object-cover"
+                              />
+                            </span>
+                            <span className="text-xs font-semibold uppercase tracking-wide">
+                              {region}
+                            </span>
+                            <span className="text-[10px] font-medium normal-case text-[var(--color-text-secondary)]" aria-hidden="true">
+                              {copy.regionOptions[region]}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {isForgot && (
-                <p className="text-sm text-[var(--color-text-secondary)] text-center">
-                  Introduce tu correo electrónico para enviarte un enlace seguro de restablecimiento.
-                </p>
+                <p className="text-sm text-[var(--color-text-secondary)] text-center">{copy.forgotInstructions}</p>
               )}
 
               {error && <p className="text-center text-red-500">{error}</p>}
 
               <button
                 type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold flex items-center justify-center gap-2"
-                disabled={loading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loading || (isRegister && !bettingRegion)}
               >
                 {loading ? (
                   <Loader className="w-5 h-5 animate-spin" />
                 ) : isForgot ? (
                   <>
                     <RefreshCw className="w-5 h-5" />
-                    Enviar enlace de recuperación
+                    {copy.buttons.sendReset}
                   </>
                 ) : isRegister ? (
-                  "Registrarse"
+                  copy.buttons.register
                 ) : (
-                  "Entrar"
+                  copy.buttons.login
                 )}
               </button>
             </form>
@@ -199,7 +281,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   className="text-sm text-blue-400 hover:text-blue-300"
                   type="button"
                 >
-                  {isRegister ? "¿Ya tienes cuenta? Inicia sesión" : "¿Aún no tienes cuenta? Regístrate"}
+                  {isRegister ? copy.links.haveAccount : copy.links.needAccount}
                 </button>
               )}
 
@@ -213,7 +295,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   className="text-sm text-blue-400 hover:text-blue-300"
                   type="button"
                 >
-                  ¿Olvidaste tu contraseña?
+                  {copy.links.forgotPassword}
                 </button>
               )}
 
@@ -226,7 +308,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   className="text-sm text-blue-400 hover:text-blue-300"
                   type="button"
                 >
-                  Volver a iniciar sesión
+                  {copy.links.backToLogin}
                 </button>
               )}
             </div>
