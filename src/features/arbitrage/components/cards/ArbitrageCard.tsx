@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import BetInfo from "./BetInfo";
+import BetInfo, { type BetInfoLabels } from "./BetInfo";
 import ProfitBadge from "../ui/ProfitBadge";
 import NewBadge from "../ui/NewBadge";
 import { isRecent, timeUntilExpiry } from "../../utils/helpers";
@@ -9,9 +9,17 @@ type ArbitrageCardProps = {
   arb: Arbitrage;
   stakes: StakeResult;
   deltaState?: "new" | "updated" | undefined; // 👈 Nuevo prop
+  labels: {
+    homePrefix: string;
+    awayPrefix: string;
+    ariaLabel: (id: string | number) => string;
+    betInfo: BetInfoLabels;
+    newBadge: string;
+  };
+  formatCurrency: (value?: number | null) => string;
 };
 
-const ArbitrageCard = ({ arb, stakes, deltaState }: ArbitrageCardProps) => {
+const ArbitrageCard = ({ arb, stakes, deltaState, labels, formatCurrency }: ArbitrageCardProps) => {
   const referenceDate = useMemo(
     () => arb.created_at ?? arb.updated_at ?? arb.date_obtained,
     [arb.created_at, arb.updated_at, arb.date_obtained]
@@ -55,12 +63,12 @@ const ArbitrageCard = ({ arb, stakes, deltaState }: ArbitrageCardProps) => {
     <div
       className={`arb-card fade-in ${deltaClass}`}
       role="article"
-      aria-label={`Arbitraje ${arb.id_arb}`}
+      aria-label={labels.ariaLabel(arb.id_arb ?? "")}
     >
       <div className="arb-card-header">
         <div className="arb-left">
           <ProfitBadge profit={arb.profit_percent} />
-          {showNewBadge && <NewBadge />}
+          {showNewBadge && <NewBadge label={labels.newBadge} />}
         </div>
         <div className="arb-date">{arb.date_obtained}</div>
       </div>
@@ -74,6 +82,8 @@ const ArbitrageCard = ({ arb, stakes, deltaState }: ArbitrageCardProps) => {
               bookmaker={arb.back_bookmaker}
               odds={arb.back_odds}
               stake={stakes.stakeBack}
+              labels={labels.betInfo}
+              formatCurrency={formatCurrency}
             />
             <BetInfo
               type="Lay"
@@ -82,23 +92,29 @@ const ArbitrageCard = ({ arb, stakes, deltaState }: ArbitrageCardProps) => {
               odds={arb.lay_odds}
               stake={stakes.stakeLay}
               liability={stakes.liabilityLay}
+              labels={labels.betInfo}
+              formatCurrency={formatCurrency}
             />
           </>
         ) : (
           <>
             <BetInfo
               type="Back"
-              team={`Home: ${arb.home?.team}`}
+              team={`${labels.homePrefix}: ${arb.home?.team ?? ""}`}
               bookmaker={arb.home?.bookmaker}
               odds={arb.home?.odds}
               stake={stakes.stakeHome}
+              labels={labels.betInfo}
+              formatCurrency={formatCurrency}
             />
             <BetInfo
               type="Back"
-              team={`Away: ${arb.away?.team}`}
+              team={`${labels.awayPrefix}: ${arb.away?.team ?? ""}`}
               bookmaker={arb.away?.bookmaker}
               odds={arb.away?.odds}
               stake={stakes.stakeAway}
+              labels={labels.betInfo}
+              formatCurrency={formatCurrency}
             />
           </>
         )}

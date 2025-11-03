@@ -9,6 +9,7 @@ import Logo from "@/components/common/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { supabase } from "@/lib/supabase/client";
 import { useThemeContext } from "@/providers/ThemeProvider";
+import { useAppTranslations } from "@/lib/i18n";
 
 type HeaderPrivateProps = {
   session: Session | null;
@@ -17,9 +18,11 @@ type HeaderPrivateProps = {
 export default function HeaderPrivate({ session }: HeaderPrivateProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useThemeContext();
+  const headerCopy = useAppTranslations("header");
+  const copy = headerCopy.private;
   const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const userEmail = session?.user?.email ?? "Usuario";
+  const userEmail = session?.user?.email ?? copy.defaultUser;
 
   const handleLogout = async () => {
     try {
@@ -30,7 +33,6 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
     }
   };
 
-  // 🔹 Cerrar el menú al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -47,10 +49,8 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
         <Logo />
 
         <div className="flex items-center gap-4">
-          {/* 🔹 Botón para cambiar tema */}
           <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
-          {/* 🔹 Botón de usuario */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setOpenMenu((p) => !p)}
@@ -60,7 +60,6 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
               <span className="text-sm font-medium hidden sm:inline">{userEmail}</span>
             </button>
 
-            {/* 🔹 Menú desplegable */}
             {openMenu && (
               <div className="absolute right-0 mt-2 w-44 bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-xl shadow-lg overflow-hidden animate-fadeIn">
                 <button
@@ -70,7 +69,7 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
                   }}
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--color-hover-bg)] transition"
                 >
-                  <Settings className="w-4 h-4" /> Configuración
+                  <Settings className="w-4 h-4" /> {copy.settings}
                 </button>
 
                 <button
@@ -80,7 +79,7 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
                   }}
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-[var(--color-hover-bg)] transition"
                 >
-                  <LogOut className="w-4 h-4" /> Cerrar sesión
+                  <LogOut className="w-4 h-4" /> {copy.signOut}
                 </button>
               </div>
             )}
@@ -88,7 +87,6 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
         </div>
       </div>
 
-      {/* 🔹 Animación suave */}
       <style jsx>{`
         @keyframes fadeIn {
           from {
