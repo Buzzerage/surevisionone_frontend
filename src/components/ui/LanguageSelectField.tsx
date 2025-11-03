@@ -2,7 +2,8 @@
 
 import type { ChangeEvent } from "react";
 
-import { useLanguageContext, type LanguageCode } from "@/providers/LanguageProvider";
+import { useLanguageContext } from "@/providers/LanguageProvider";
+import type { LanguageCode } from "@/lib/i18n/language";
 
 type LanguageSelectFieldProps = {
   className?: string;

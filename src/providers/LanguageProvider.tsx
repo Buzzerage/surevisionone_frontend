@@ -3,19 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/lib/supabase/client";
-
-export type LanguageCode = "es" | "en";
+import { getLanguageOptions } from "@/lib/i18n";
+import { DEFAULT_LANGUAGE, type LanguageCode } from "@/lib/i18n/language";
 
 export type LanguageOption = {
   code: LanguageCode;
   label: string;
   flag: string;
 };
-
-export const LANGUAGE_OPTIONS: LanguageOption[] = [
-  { code: "es", label: "Español", flag: "🇪🇸" },
-  { code: "en", label: "English", flag: "🇬🇧" },
-];
 
 type LanguageContextType = {
   language: LanguageCode;
@@ -30,12 +25,12 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const normalizeLanguage = (value: unknown): LanguageCode => {
   if (value === "es") return "es";
-  return "en";
+  return DEFAULT_LANGUAGE;
 };
 
 const detectBrowserLanguage = (): LanguageCode => {
   if (typeof navigator === "undefined") {
-    return "en";
+    return DEFAULT_LANGUAGE;
   }
 
   const browserLanguages = Array.isArray(navigator.languages)
@@ -86,6 +81,7 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
   });
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const languageOptions = useMemo(() => getLanguageOptions(language), [language]);
 
   useEffect(() => {
     applyLanguageToDocument(language);
@@ -187,8 +183,8 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
   );
 
   const value = useMemo<LanguageContextType>(
-    () => ({ language, setLanguage: handleSetLanguage, loading, options: LANGUAGE_OPTIONS }),
-    [handleSetLanguage, language, loading]
+    () => ({ language, setLanguage: handleSetLanguage, loading, options: languageOptions }),
+    [handleSetLanguage, language, languageOptions, loading]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

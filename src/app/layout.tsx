@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SureVision - Arbitraje Deportivo",
-  description: "Encuentra oportunidades de arbitraje deportivo en tiempo real.",
+  title: "SureVision - Sports Arbitrage",
+  description: "Discover real-time sports arbitrage opportunities with automated scanning.",
 };
 
 export default function RootLayout({
@@ -26,11 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {/* 👇 PROVIDER GLOBAL */}
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
           <LanguageProvider>
             <ClientLayoutWrapper>{children}</ClientLayoutWrapper>

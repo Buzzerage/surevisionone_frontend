@@ -7,6 +7,7 @@ import type { AuthError } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase/client";
 import { useLanguageContext } from "@/providers/LanguageProvider";
+import { useAppTranslations } from "@/lib/i18n";
 
 type LoginModalProps = {
   onClose?: () => void;
@@ -23,8 +24,8 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const [visible, setVisible] = useState(false);
   const [bettingRegion, setBettingRegion] = useState<"EU" | "UK" | "">("");
   const { language } = useLanguageContext();
+  const copy = useAppTranslations("auth");
 
-  // animación de entrada
   useEffect(() => {
     setVisible(true);
     if (typeof document !== "undefined") {
@@ -60,15 +61,13 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           throw resetError;
         }
 
-        setSuccessMessage(
-          "Te hemos enviado un enlace seguro para restablecer tu contraseña. Revisa tu bandeja de entrada."
-        );
+        setSuccessMessage(copy.success.reset);
         return;
       }
 
       if (mode === "register") {
         if (!bettingRegion) {
-          setError("Selecciona tu región de apuestas para continuar.");
+          setError(copy.errors.regionRequired);
           setLoading(false);
           return;
         }
@@ -102,9 +101,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           }
         }
 
-        setSuccessMessage(
-          "Cuenta creada. Revisa tu email y valida tu cuenta para poder acceder de forma segura al panel."
-        );
+        setSuccessMessage(copy.success.register);
         return;
       }
 
@@ -113,14 +110,14 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         throw signInError;
       }
 
-      setSuccessMessage("Sesión iniciada correctamente. Redirigiendo al panel...");
+      setSuccessMessage(copy.success.login);
       setTimeout(() => {
         onClose?.();
         router.push("/panel");
       }, 1200);
     } catch (err) {
       const authError = err as AuthError | Error;
-      setError(authError.message || "Error al iniciar sesión");
+      setError(authError.message || copy.errors.genericSignIn);
     } finally {
       setLoading(false);
     }
@@ -164,15 +161,13 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 }
               }}
             >
-              {mode === "login"
-                ? "Continuar"
-                : "Entendido, revisaré mi correo"}
+              {mode === "login" ? copy.buttons.continue : copy.buttons.dismiss}
             </button>
           </div>
         ) : (
           <>
             <h2 className="text-2xl font-bold text-center mb-6 text-[var(--color-text-accent)]">
-              {isForgot ? "Recuperar contraseña" : isRegister ? "Crear cuenta" : "Iniciar sesión"}
+              {isForgot ? copy.titles.forgot : isRegister ? copy.titles.register : copy.titles.login}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -180,7 +175,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="email"
-                  placeholder="Correo electrónico"
+                  placeholder={copy.placeholders.email}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white focus:ring-2 focus:ring-blue-500"
@@ -193,7 +188,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="password"
-                    placeholder="Contraseña"
+                    placeholder={copy.placeholders.password}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white focus:ring-2 focus:ring-blue-500"
@@ -204,9 +199,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
 
               {isRegister && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-                    Selecciona tu región de apuestas
-                  </p>
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">{copy.regionLabel}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {["EU", "UK"].map((region) => {
                       const isActive = bettingRegion === region;
@@ -221,7 +214,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                               : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
                           }`}
                         >
-                          {region === "EU" ? "Europa (EU)" : "Reino Unido (UK)"}
+                          {copy.regionOptions[region as "EU" | "UK"]}
                         </button>
                       );
                     })}
@@ -230,9 +223,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
               )}
 
               {isForgot && (
-                <p className="text-sm text-[var(--color-text-secondary)] text-center">
-                  Introduce tu correo electrónico para enviarte un enlace seguro de restablecimiento.
-                </p>
+                <p className="text-sm text-[var(--color-text-secondary)] text-center">{copy.forgotInstructions}</p>
               )}
 
               {error && <p className="text-center text-red-500">{error}</p>}
@@ -247,12 +238,12 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 ) : isForgot ? (
                   <>
                     <RefreshCw className="w-5 h-5" />
-                    Enviar enlace de recuperación
+                    {copy.buttons.sendReset}
                   </>
                 ) : isRegister ? (
-                  "Registrarse"
+                  copy.buttons.register
                 ) : (
-                  "Entrar"
+                  copy.buttons.login
                 )}
               </button>
             </form>
@@ -264,7 +255,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   className="text-sm text-blue-400 hover:text-blue-300"
                   type="button"
                 >
-                  {isRegister ? "¿Ya tienes cuenta? Inicia sesión" : "¿Aún no tienes cuenta? Regístrate"}
+                  {isRegister ? copy.links.haveAccount : copy.links.needAccount}
                 </button>
               )}
 
@@ -278,7 +269,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   className="text-sm text-blue-400 hover:text-blue-300"
                   type="button"
                 >
-                  ¿Olvidaste tu contraseña?
+                  {copy.links.forgotPassword}
                 </button>
               )}
 
@@ -291,7 +282,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   className="text-sm text-blue-400 hover:text-blue-300"
                   type="button"
                 >
-                  Volver a iniciar sesión
+                  {copy.links.backToLogin}
                 </button>
               )}
             </div>
