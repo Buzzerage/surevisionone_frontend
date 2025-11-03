@@ -42,9 +42,10 @@ const FEEDBACK_STYLES: Record<FeedbackTone, {
 type StatusBannerProps = {
   feedback: FeedbackState | null;
   onDismiss: () => void;
+  dismissLabel: string;
 };
 
-const StatusBanner = ({ feedback, onDismiss }: StatusBannerProps) => {
+const StatusBanner = ({ feedback, onDismiss, dismissLabel }: StatusBannerProps) => {
   if (!feedback) return null;
 
   const palette = FEEDBACK_STYLES[feedback.type];
@@ -63,7 +64,7 @@ const StatusBanner = ({ feedback, onDismiss }: StatusBannerProps) => {
         onClick={onDismiss}
         className={`text-xs font-semibold uppercase tracking-wide underline decoration-dotted transition-colors hover:opacity-80 ${palette.dismiss}`}
       >
-        Cerrar
+        {dismissLabel}
       </button>
     </div>
   );
