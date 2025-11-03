@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import type { LanguageCode } from "./language";
-import { LANGUAGE_FLAGS, SUPPORTED_LANGUAGES } from "./language";
+import { LANGUAGE_FLAG_ASSETS, SUPPORTED_LANGUAGES } from "./language";
 import { translations } from "./translations";
 import type { AppTranslations } from "./translations";
 import { useLanguageContext } from "@/providers/LanguageProvider";
@@ -16,7 +16,8 @@ export const getLanguageOptions = (language: LanguageCode) => {
   const names = getLanguageNames(language);
   return SUPPORTED_LANGUAGES.map((code) => ({
     code,
-    flag: LANGUAGE_FLAGS[code],
+    flagIcon: LANGUAGE_FLAG_ASSETS[code].src,
+    flagAlt: LANGUAGE_FLAG_ASSETS[code].alt,
     label: names[code],
     codeLabel: code.toUpperCase(),
   }));

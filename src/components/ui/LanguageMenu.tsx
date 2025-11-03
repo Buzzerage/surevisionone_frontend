@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 
 import { useLanguageContext } from "@/providers/LanguageProvider";
@@ -39,9 +40,17 @@ const LanguageMenu = ({ className }: LanguageMenuProps) => {
         className="flex items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-3 py-1.5 text-sm font-semibold text-[var(--color-text-accent)] shadow-sm transition hover:bg-[var(--color-hover-bg)]"
         aria-label={current?.label}
       >
-        <span className="text-lg leading-none" aria-hidden="true">
-          {current?.flag}
-        </span>
+        {current ? (
+          <span className="flex h-5 w-7 items-center justify-center overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-background-secondary)]" aria-hidden="true">
+            <Image
+              src={current.flagIcon}
+              alt={current.flagAlt}
+              width={28}
+              height={20}
+              className="h-5 w-7 object-cover"
+            />
+          </span>
+        ) : null}
         <span className="text-xs font-semibold uppercase tracking-wide" aria-hidden="true">
           {current?.codeLabel}
         </span>
@@ -57,6 +66,9 @@ const LanguageMenu = ({ className }: LanguageMenuProps) => {
               type="button"
               onClick={() => {
                 setOpen(false);
+                if (option.code === language) {
+                  return;
+                }
                 void setLanguage(option.code);
                 void saveLanguagePreference(option.code).catch(() => undefined);
               }}
@@ -65,8 +77,17 @@ const LanguageMenu = ({ className }: LanguageMenuProps) => {
               }`}
               aria-label={option.label}
             >
-              <span className="text-lg" aria-hidden="true">
-                {option.flag}
+              <span
+                className="flex h-5 w-7 items-center justify-center overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-background-secondary)]"
+                aria-hidden="true"
+              >
+                <Image
+                  src={option.flagIcon}
+                  alt={option.flagAlt}
+                  width={28}
+                  height={20}
+                  className="h-5 w-7 object-cover"
+                />
               </span>
               <span className="flex items-center gap-2" aria-hidden="true">
                 <span className="text-xs font-semibold uppercase tracking-wide">{option.codeLabel}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
@@ -15,21 +16,18 @@ import LanguageSelectField from "@/components/ui/LanguageSelectField";
 import { useLanguageContext } from "@/providers/LanguageProvider";
 import type { LanguageCode } from "@/lib/i18n/language";
 import { useAppTranslations } from "@/lib/i18n";
+import {
+  BETTING_REGION_FLAG_ASSETS,
+  BETTING_REGION_OPTIONS,
+  type BettingRegion,
+} from "@/lib/regions/betting";
+import { clearSupabaseSession } from "@/lib/supabase/clearSession";
 
 const emptyForm: PasswordFormValues = {
   currentPassword: "",
   newPassword: "",
   confirmPassword: "",
 };
-
-type BettingRegion = "EU" | "UK";
-
-const REGION_FLAGS: Record<BettingRegion, string> = {
-  EU: "🇪🇸",
-  UK: "🇬🇧",
-};
-
-const REGION_OPTIONS: BettingRegion[] = ["EU", "UK"];
 
 const resolveLanguageFromMetadata = (value: unknown): LanguageCode | null => {
   if (value === "es") return "es";
@@ -331,10 +329,10 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       });
       setTimeout(async () => {
         try {
-          await supabase.auth.signOut({ scope: "local" });
+          await clearSupabaseSession();
         } catch (signOutError) {
           if (process.env.NODE_ENV !== "production") {
-            console.error("Unable to sign out after deleting the account", signOutError);
+            console.error("Unable to clear the session after deleting the account", signOutError);
           }
         } finally {
           router.replace("/");
@@ -421,7 +419,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               <div>
                 <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.region}</dt>
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  {REGION_OPTIONS.map((region) => {
+                  {BETTING_REGION_OPTIONS.map((region) => {
                     const isActive = draftRegion === region;
                     return (
                       <button
@@ -435,8 +433,17 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
                         }`}
                         aria-label={copy.mainCard.regionOptions[region]}
                       >
-                        <span className="text-2xl" aria-hidden="true">
-                          {REGION_FLAGS[region]}
+                        <span
+                          className="flex h-10 w-14 items-center justify-center overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-background-secondary)]"
+                          aria-hidden="true"
+                        >
+                          <Image
+                            src={BETTING_REGION_FLAG_ASSETS[region].src}
+                            alt={BETTING_REGION_FLAG_ASSETS[region].alt}
+                            width={48}
+                            height={36}
+                            className="h-10 w-14 object-cover"
+                          />
                         </span>
                         <span>{region}</span>
                         <span className="text-[var(--color-text-secondary)] normal-case" aria-hidden="true">

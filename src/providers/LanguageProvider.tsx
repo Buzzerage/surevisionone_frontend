@@ -10,7 +10,8 @@ export type LanguageOption = {
   code: LanguageCode;
   label: string;
   codeLabel: string;
-  flag: string;
+  flagIcon: string;
+  flagAlt: string;
 };
 
 type LanguageContextType = {

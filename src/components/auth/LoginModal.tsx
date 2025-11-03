@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader, Lock, Mail, RefreshCw, ShieldCheck, X } from "lucide-react";
 import type { AuthError } from "@supabase/supabase-js";
@@ -8,6 +9,11 @@ import type { AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguageContext } from "@/providers/LanguageProvider";
 import { useAppTranslations } from "@/lib/i18n";
+import {
+  BETTING_REGION_FLAG_ASSETS,
+  BETTING_REGION_OPTIONS,
+  type BettingRegion,
+} from "@/lib/regions/betting";
 
 type LoginModalProps = {
   onClose?: () => void;
@@ -22,13 +28,9 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
-  const [bettingRegion, setBettingRegion] = useState<"EU" | "UK" | "">("");
+  const [bettingRegion, setBettingRegion] = useState<BettingRegion | "">("");
   const { language } = useLanguageContext();
   const copy = useAppTranslations("auth");
-  const regionFlags: Record<"EU" | "UK", string> = {
-    EU: "🇪🇸",
-    UK: "🇬🇧",
-  };
 
   useEffect(() => {
     setVisible(true);
@@ -205,29 +207,38 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-[var(--color-text-secondary)]">{copy.regionLabel}</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {["EU", "UK"].map((region) => {
+                    {BETTING_REGION_OPTIONS.map((region) => {
                       const isActive = bettingRegion === region;
                       return (
                         <button
                           key={region}
                           type="button"
-                          onClick={() => setBettingRegion(region as "EU" | "UK")}
+                          onClick={() => setBettingRegion(region)}
                           className={`rounded-lg border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${
                             isActive
                               ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
                               : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
                           }`}
-                          aria-label={copy.regionOptions[region as "EU" | "UK"]}
+                          aria-label={copy.regionOptions[region]}
                         >
                           <span className="flex flex-col items-center gap-1">
-                            <span className="text-2xl" aria-hidden="true">
-                              {regionFlags[region as "EU" | "UK"]}
+                            <span
+                              className="flex h-12 w-16 items-center justify-center overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-background-secondary)]"
+                              aria-hidden="true"
+                            >
+                              <Image
+                                src={BETTING_REGION_FLAG_ASSETS[region].src}
+                                alt={BETTING_REGION_FLAG_ASSETS[region].alt}
+                                width={64}
+                                height={48}
+                                className="h-12 w-16 object-cover"
+                              />
                             </span>
                             <span className="text-xs font-semibold uppercase tracking-wide">
                               {region}
                             </span>
                             <span className="text-[10px] font-medium normal-case text-[var(--color-text-secondary)]" aria-hidden="true">
-                              {copy.regionOptions[region as "EU" | "UK"]}
+                              {copy.regionOptions[region]}
                             </span>
                           </span>
                         </button>

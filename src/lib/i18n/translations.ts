@@ -1,6 +1,6 @@
 import type { LanguageCode } from "./language";
 
-type BettingRegion = "EU" | "UK";
+import type { BettingRegion } from "@/lib/regions/betting";
 
 type LandingFeature = {
   title: string;
