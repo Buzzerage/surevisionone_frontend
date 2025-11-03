@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
@@ -8,14 +8,39 @@ import { supabase } from "@/lib/supabase/client";
 import ProfileCard from "./components/ProfileCard";
 import PasswordForm, { type PasswordFormValues } from "./components/PasswordForm";
 import StatusBanner from "./components/StatusBanner";
-import { PLAN_LIBRARY } from "./constants";
+import { getPlanLibrary } from "./constants";
 import { normalizePlanName, resolveRenewalDate } from "./utils";
 import type { FeedbackState, PlanObject, ProfileUser } from "./types";
+import LanguageSelectField from "@/components/ui/LanguageSelectField";
+import { useLanguageContext } from "@/providers/LanguageProvider";
+import type { LanguageCode } from "@/lib/i18n/language";
+import { useAppTranslations } from "@/lib/i18n";
 
 const emptyForm: PasswordFormValues = {
   currentPassword: "",
   newPassword: "",
   confirmPassword: "",
+};
+
+type BettingRegion = "EU" | "UK";
+
+const REGION_FLAGS: Record<BettingRegion, string> = {
+  EU: "🇪🇸",
+  UK: "🇬🇧",
+};
+
+const REGION_OPTIONS: BettingRegion[] = ["EU", "UK"];
+
+const resolveLanguageFromMetadata = (value: unknown): LanguageCode | null => {
+  if (value === "es") return "es";
+  if (value === "en") return "en";
+  return null;
+};
+
+const resolveRegionFromMetadata = (value: unknown): BettingRegion | null => {
+  if (value === "UK") return "UK";
+  if (value === "EU") return "EU";
+  return null;
 };
 
 type ProfilePanelProps = {
@@ -24,11 +49,14 @@ type ProfilePanelProps = {
 
 const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const router = useRouter();
+  const { language, saveLanguagePreference } = useLanguageContext();
+  const copy = useAppTranslations("profile");
 
   const [formValues, setFormValues] = useState<PasswordFormValues>(emptyForm);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const planSource = useMemo<ProfileUser["plan"]>(() => {
     if (!user) return undefined;
@@ -59,18 +87,25 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   }, [planSource]);
 
   const normalizedPlan = useMemo(() => normalizePlanName(planSource), [planSource]);
-
-  const planMetadata = PLAN_LIBRARY[normalizedPlan] ?? PLAN_LIBRARY.Free;
+  const planLibrary = useMemo(() => getPlanLibrary(language), [language]);
+  const planMetadata = planLibrary[normalizedPlan] ?? planLibrary.Free;
   const planStatus = planObject?.status ?? planObject?.state;
-  const renewalDate = resolveRenewalDate(planObject);
+  const renewalDate = resolveRenewalDate(planObject, language);
 
   const quota = planObject?.quota ?? planObject?.limits;
   const opportunitiesPerDay = quota?.opportunitiesPerDay;
   const alertsPerDay = quota?.alerts;
-  const refreshIntervalMinutes =
-    quota?.refreshIntervalMinutes ?? quota?.refresh_interval_minutes;
+  const refreshIntervalMinutes = quota?.refreshIntervalMinutes ?? quota?.refresh_interval_minutes;
 
   const userMetadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const metadataLanguage = resolveLanguageFromMetadata(userMetadata.language);
+  const metadataRegion = resolveRegionFromMetadata(userMetadata.betting_region);
+  const initialProfileLanguage = metadataLanguage ?? language;
+  const initialProfileRegion = metadataRegion ?? "EU";
+  const [profileLanguage, setProfileLanguage] = useState<LanguageCode>(initialProfileLanguage);
+  const [draftLanguage, setDraftLanguage] = useState<LanguageCode>(language);
+  const [profileRegion, setProfileRegion] = useState<BettingRegion>(initialProfileRegion);
+  const [draftRegion, setDraftRegion] = useState<BettingRegion>(initialProfileRegion);
   const fullName =
     (userMetadata.full_name as string | undefined) ??
     (userMetadata.fullName as string | undefined) ??
@@ -82,9 +117,52 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const userEmail = user?.email ?? undefined;
   const email = userEmail ?? "—";
 
+  useEffect(() => {
+    setProfileLanguage(initialProfileLanguage);
+  }, [initialProfileLanguage]);
+
+  useEffect(() => {
+    setDraftLanguage(language);
+  }, [language]);
+
+  useEffect(() => {
+    setProfileRegion(initialProfileRegion);
+    setDraftRegion(initialProfileRegion);
+  }, [initialProfileRegion]);
+
   const updateFormValue = (field: keyof PasswordFormValues, value: string) => {
     setFormValues((previous) => ({ ...previous, [field]: value }));
   };
+
+  const handleLanguageDraftChange = useCallback((code: LanguageCode) => {
+    setDraftLanguage(code);
+  }, []);
+
+  const handleRegionSelect = useCallback((region: BettingRegion) => {
+    setDraftRegion(region);
+  }, []);
+
+  const preferencesDirty = draftLanguage !== profileLanguage || draftRegion !== profileRegion;
+
+  const handleSavePreferences = useCallback(async () => {
+    setFeedback(null);
+    setIsSavingPreferences(true);
+
+    try {
+      await saveLanguagePreference(draftLanguage, { betting_region: draftRegion });
+      setProfileLanguage(draftLanguage);
+      setProfileRegion(draftRegion);
+      setFeedback({ type: "success", message: copy.feedback.preferencesSaved });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : copy.feedback.preferencesSaveFailed;
+      setFeedback({ type: "error", message });
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  }, [copy.feedback.preferencesSaveFailed, copy.feedback.preferencesSaved, draftLanguage, draftRegion, saveLanguagePreference]);
 
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -93,7 +171,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
     if (!formValues.currentPassword || !formValues.newPassword) {
       setFeedback({
         type: "error",
-        message: "Completa todos los campos para actualizar tu contraseña.",
+        message: copy.feedback.passwordMissingFields,
       });
       return;
     }
@@ -101,7 +179,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
     if (formValues.newPassword !== formValues.confirmPassword) {
       setFeedback({
         type: "error",
-        message: "Las contraseñas nuevas no coinciden.",
+        message: copy.feedback.passwordMismatch,
       });
       return;
     }
@@ -116,8 +194,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
     if (!passwordMeetsRequirements) {
       setFeedback({
         type: "error",
-        message:
-          "La contraseña debe tener al menos 12 caracteres e incluir al menos una letra minúscula, una mayúscula y un número.",
+        message: copy.feedback.passwordRequirements,
       });
       return;
     }
@@ -126,7 +203,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
 
     try {
       if (!userEmail) {
-        throw new Error("No pudimos encontrar tu correo electrónico para validar la contraseña.");
+        throw new Error(copy.feedback.passwordMissingEmail);
       }
 
       const { error: validationError } = await supabase.auth.signInWithPassword({
@@ -137,8 +214,8 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       if (validationError) {
         const message =
           validationError.status === 400 || validationError.status === 401
-            ? "La contraseña actual no es correcta."
-            : validationError.message || "No se pudo validar tu contraseña actual.";
+            ? copy.feedback.passwordIncorrectCurrent
+            : validationError.message || copy.feedback.passwordValidateFailed;
         throw new Error(message);
       }
 
@@ -149,26 +226,24 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       if (updateError) {
         const message =
           updateError.status === 422
-            ? "La nueva contraseña no cumple los requisitos de seguridad."
-            : updateError.message || "No se pudo actualizar la contraseña.";
+            ? copy.feedback.passwordInvalidNew
+            : updateError.message || copy.feedback.passwordUpdateFailed;
         throw new Error(message);
       }
 
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError && process.env.NODE_ENV !== "production") {
-        console.warn("No se pudo refrescar la sesión tras actualizar la contraseña", refreshError);
+        console.warn("Unable to refresh the session after updating the password", refreshError);
       }
 
       setFeedback({
         type: "success",
-        message: "Tu contraseña se actualizó correctamente.",
+        message: copy.feedback.passwordUpdated,
       });
       setFormValues(emptyForm);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "No se pudo actualizar la contraseña.";
+        error instanceof Error ? error.message : copy.feedback.passwordUpdateFailed;
       setFeedback({ type: "error", message });
     } finally {
       setIsUpdatingPassword(false);
@@ -178,8 +253,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const handleUpgradePlan = () => {
     setFeedback({
       type: "info",
-      message:
-        "Te mostraremos los planes disponibles en la página principal para que puedas evaluar un upgrade.",
+      message: copy.feedback.upgradeInfo,
     });
     if (typeof window !== "undefined") {
       window.open("/#pricing", "_blank", "noopener,noreferrer");
@@ -187,9 +261,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   };
 
   const handleDeleteAccount = async () => {
-    const confirmation = window.confirm(
-      "Esta acción eliminará tu cuenta y tus datos asociados. ¿Deseas continuar?"
-    );
+    const confirmation = window.confirm(copy.feedback.deleteConfirm);
 
     if (!confirmation) {
       return;
@@ -201,13 +273,13 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError) {
-        throw new Error(sessionError.message || "No se pudo verificar la sesión actual.");
+        throw new Error(sessionError.message || copy.feedback.deleteSessionCheck);
       }
 
       const accessToken = sessionData?.session?.access_token;
 
       if (!accessToken) {
-        throw new Error("No se pudo validar tu sesión para eliminar la cuenta.");
+        throw new Error(copy.feedback.deleteTokenMissing);
       }
 
       const response = await fetch("/api/account/delete", {
@@ -235,7 +307,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
           typeof payload.error === "string" &&
           payload.error.length > 0
             ? payload.error
-            : "No se pudo eliminar la cuenta.";
+            : copy.feedback.deleteFailed;
         throw new Error(errorMessage);
       }
 
@@ -249,20 +321,20 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         const errorMessage =
           "error" in payload && typeof payload.error === "string" && payload.error.length > 0
             ? payload.error
-            : "No se pudo eliminar la cuenta.";
+            : copy.feedback.deleteFailed;
         throw new Error(errorMessage);
       }
 
       setFeedback({
         type: "success",
-        message: "Tu cuenta se eliminó correctamente. Te redirigiremos al inicio.",
+        message: copy.feedback.deleteSuccess,
       });
       setTimeout(async () => {
         try {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: "local" });
         } catch (signOutError) {
           if (process.env.NODE_ENV !== "production") {
-            console.error("No se pudo cerrar la sesión después de eliminar la cuenta", signOutError);
+            console.error("Unable to sign out after deleting the account", signOutError);
           }
         } finally {
           router.replace("/");
@@ -270,9 +342,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       }, 1500);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "No se pudo eliminar la cuenta.";
+        error instanceof Error ? error.message : copy.feedback.deleteFailed;
       setFeedback({ type: "error", message });
     } finally {
       setIsDeletingAccount(false);
@@ -282,11 +352,10 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-transparent via-[rgba(6,182,212,0.06)] to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden w-1/3 bg-[radial-gradient(circle_at_top,rgba(217,70,239,0.18),transparent_65%)] opacity-40 lg:block" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden w-1/3 bg-[radial-gradient(circle_at_top,rgba(21,70,239,0.18),transparent_65%)] opacity-40 lg:block" />
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-12">
         <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(135deg,var(--card-bg-gradient-start),var(--card-bg-gradient-end))] px-6 py-6 shadow-[0_30px_60px_-35px_var(--color-card-glow)] backdrop-blur">
           <div className="flex items-center gap-3">
-            {/* 🔙 Botón de retroceso */}
             <button
               onClick={() => router.push("/panel")}
               className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-accent)] transition-all hover:bg-[var(--color-hover-bg)] hover:scale-[1.03]"
@@ -305,44 +374,81 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-              Volver
+              {copy.back}
             </button>
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-text-secondary)]">
-                Panel del usuario
+                {copy.headerBadge}
               </p>
               <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-accent)] sm:text-4xl">
-                Tu perfil
+                {copy.headerTitle}
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                Administra la información asociada a tu cuenta, ajusta la seguridad y revisa el estado de tu suscripción.
+                {copy.headerDescription}
               </p>
             </div>
           </div>
         </header>
 
-        <StatusBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
+        <StatusBanner
+          feedback={feedback}
+          onDismiss={() => setFeedback(null)}
+          dismissLabel={copy.alertDismiss}
+        />
 
         <section className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
           <ProfileCard
             icon={<Mail className="h-6 w-6" />}
-            title="Información principal"
-            description="Estos datos son privados y sólo tú puedes verlos."
+            title={copy.mainCard.title}
+            description={copy.mainCard.description}
           >
             <dl className="space-y-4 text-sm">
               {fullName ? (
                 <div>
-                  <dt className="text-[var(--color-text-secondary)]">Nombre completo</dt>
+                  <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.fullName}</dt>
                   <dd className="text-lg font-medium text-[var(--color-text-accent)]">{fullName}</dd>
                 </div>
               ) : null}
               <div>
-                <dt className="text-[var(--color-text-secondary)]">Correo electrónico</dt>
+                <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.email}</dt>
                 <dd className="text-lg font-medium text-[var(--color-text-accent)]">{email}</dd>
               </div>
+              <div>
+                <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.language}</dt>
+                <LanguageSelectField value={draftLanguage} onChange={handleLanguageDraftChange} />
+              </div>
+              <div>
+                <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.region}</dt>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {REGION_OPTIONS.map((region) => {
+                    const isActive = draftRegion === region;
+                    return (
+                      <button
+                        key={region}
+                        type="button"
+                        onClick={() => handleRegionSelect(region)}
+                        className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${
+                          isActive
+                            ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
+                            : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
+                        }`}
+                        aria-label={copy.mainCard.regionOptions[region]}
+                      >
+                        <span className="text-2xl" aria-hidden="true">
+                          {REGION_FLAGS[region]}
+                        </span>
+                        <span>{region}</span>
+                        <span className="text-[var(--color-text-secondary)] normal-case" aria-hidden="true">
+                          {copy.mainCard.regionOptions[region]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="flex flex-wrap items-center gap-2">
-                <dt className="text-[var(--color-text-secondary)]">Plan activo</dt>
+                <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.activePlan}</dt>
                 <dd className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-background-tertiary)] px-3 py-1 text-sm font-semibold text-[var(--color-text-accent)]">
                   <Crown className="h-4 w-4 text-[var(--color-accent-primary)]" />
                   {normalizedPlan}
@@ -350,7 +456,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               </div>
               {planStatus ? (
                 <div>
-                  <dt className="text-[var(--color-text-secondary)]">Estado del plan</dt>
+                  <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.planStatus}</dt>
                   <dd className="text-sm font-medium uppercase tracking-wide text-[var(--color-accent-primary)]">
                     {planStatus}
                   </dd>
@@ -358,23 +464,41 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               ) : null}
               {renewalDate ? (
                 <div>
-                  <dt className="text-[var(--color-text-secondary)]">Próxima renovación</dt>
+                  <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.renewal}</dt>
                   <dd className="text-sm font-medium text-[var(--color-text-accent)]">{renewalDate}</dd>
                 </div>
               ) : null}
             </dl>
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleSavePreferences}
+                disabled={!preferencesDirty || isSavingPreferences}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--color-accent-primary)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)] transition hover:bg-[var(--color-accent-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingPreferences ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {copy.mainCard.savingPreferences}
+                  </>
+                ) : (
+                  <>{copy.mainCard.savePreferences}</>
+                )}
+              </button>
+            </div>
           </ProfileCard>
 
           <ProfileCard
             icon={<ShieldCheck className="h-6 w-6" />}
-            title="Seguridad"
-            description="Cambiar tu contraseña ayuda a mantener la cuenta protegida."
+            title={copy.securityCard.title}
+            description={copy.securityCard.description}
           >
             <PasswordForm
               values={formValues}
               onChange={updateFormValue}
               onSubmit={handlePasswordSubmit}
               submitting={isUpdatingPassword}
+              labels={copy.passwordForm}
             />
           </ProfileCard>
         </section>
@@ -382,7 +506,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <ProfileCard
             icon={<Crown className="h-6 w-6" />}
-            title={`Tu plan ${normalizedPlan}`}
+            title={`${copy.planCard.titlePrefix} ${normalizedPlan}${copy.planCard.titleSuffix ? ` ${copy.planCard.titleSuffix}` : ""}`.trim()}
             description={planMetadata.description}
           >
             <ul className="space-y-3 text-sm text-[var(--color-text-accent)]">
@@ -401,21 +525,21 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
                 {opportunitiesPerDay ? (
                   <div>
-                    <dt className="text-[var(--color-text-secondary)]">Oportunidades al día</dt>
+                    <dt className="text-[var(--color-text-secondary)]">{copy.planCard.opportunities}</dt>
                     <dd className="font-medium text-[var(--color-text-accent)]">{opportunitiesPerDay}</dd>
                   </div>
                 ) : null}
                 {alertsPerDay ? (
                   <div>
-                    <dt className="text-[var(--color-text-secondary)]">Alertas disponibles</dt>
+                    <dt className="text-[var(--color-text-secondary)]">{copy.planCard.alerts}</dt>
                     <dd className="font-medium text-[var(--color-text-accent)]">{alertsPerDay}</dd>
                   </div>
                 ) : null}
                 {refreshIntervalMinutes ? (
                   <div>
-                    <dt className="text-[var(--color-text-secondary)]">Actualización de datos</dt>
+                    <dt className="text-[var(--color-text-secondary)]">{copy.planCard.refresh}</dt>
                     <dd className="font-medium text-[var(--color-text-accent)]">
-                      Cada {refreshIntervalMinutes} min
+                      {copy.planCard.refreshEvery} {refreshIntervalMinutes} {copy.planCard.refreshUnit}
                     </dd>
                   </div>
                 ) : null}
@@ -434,12 +558,12 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
 
           <ProfileCard
             icon={<AlertTriangle className="h-6 w-6" />}
-            title="Zona de riesgo"
-            description="Eliminar la cuenta es irreversible."
+            title={copy.dangerCard.title}
+            description={copy.dangerCard.description}
             tone="danger"
           >
             <p className="mb-5 text-sm leading-relaxed text-[var(--color-danger-text)]">
-              Esta acción eliminará tu cuenta y tu método de pago, y no podrás restaurarlos posteriormente.
+              {copy.dangerCard.body}
             </p>
             <button
               type="button"
@@ -450,12 +574,12 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               {isDeletingAccount ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Procesando...
+                  {copy.dangerCard.processing}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  Eliminar cuenta
+                  {copy.dangerCard.delete}
                 </>
               )}
             </button>
