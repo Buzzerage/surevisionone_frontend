@@ -11,6 +11,7 @@ import StatusBanner from "./components/StatusBanner";
 import { PLAN_LIBRARY } from "./constants";
 import { normalizePlanName, resolveRenewalDate } from "./utils";
 import type { FeedbackState, PlanObject, ProfileUser } from "./types";
+import LanguageSelectField from "@/components/ui/LanguageSelectField";
 
 const emptyForm: PasswordFormValues = {
   currentPassword: "",
@@ -340,6 +341,10 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               <div>
                 <dt className="text-[var(--color-text-secondary)]">Correo electrónico</dt>
                 <dd className="text-lg font-medium text-[var(--color-text-accent)]">{email}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--color-text-secondary)]">Idioma preferido</dt>
+                <LanguageSelectField />
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <dt className="text-[var(--color-text-secondary)]">Plan activo</dt>

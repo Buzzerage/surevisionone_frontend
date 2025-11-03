@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@/styles/arbitrages.css";
 import ThemeProvider from "@/providers/ThemeProvider";
+import LanguageProvider from "@/providers/LanguageProvider";
 import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 
 const geistSans = Geist({
@@ -31,7 +32,9 @@ export default function RootLayout({
       >
         {/* 👇 PROVIDER GLOBAL */}
         <ThemeProvider>
-          <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+          <LanguageProvider>
+            <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

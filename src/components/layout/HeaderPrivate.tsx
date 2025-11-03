@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import Logo from "@/components/common/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LanguageMenu from "@/components/ui/LanguageMenu";
 import { supabase } from "@/lib/supabase/client";
 import { useThemeContext } from "@/providers/ThemeProvider";
 
@@ -47,6 +48,9 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
         <Logo />
 
         <div className="flex items-center gap-4">
+          {/* 🌐 Selector de idioma */}
+          <LanguageMenu />
+
           {/* 🔹 Botón para cambiar tema */}
           <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
