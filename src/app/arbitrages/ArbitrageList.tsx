@@ -17,11 +17,24 @@ import AppHeader from "./components/layout/AppHeader";
 import SportFilter from "./components/layout/SportFilter";
 import BankControl from "./components/ui/BankControl";
 import ArbitrageCard from "./components/cards/ArbitrageCard";
+import UserProfileCard from "./components/cards/UserProfileCard";
+import { useLanguage } from "../context/LanguageProvider";
+import type { Arbitrage } from "./utils/types";
 
 import "./style.css";
 
-export default function ArbitrageList() {
-  const { arbitrages, status } = useArbitrageWS();
+type ArbitrageListProps = {
+  user?: {
+    email?: string | null;
+    region?: string | null;
+    betting_region?: string | null;
+    language?: string | null;
+  } | null;
+};
+
+export default function ArbitrageList({ user }: ArbitrageListProps) {
+  const { arbitrages } = useArbitrageWS() as { arbitrages: Arbitrage[] };
+  const { t } = useLanguage();
 
   const [bank, setBank] = useState<number>(100);
   const [selectedSport, setSelectedSport] = useState<string>("All");
@@ -52,7 +65,7 @@ export default function ArbitrageList() {
   );
 
   // 🧩 Filtrado por deporte
-  const filteredArbitrages = useMemo(() => {
+  const filteredArbitrages = useMemo<Arbitrage[]>(() => {
     if (selectedSport === "All") return arbitrages;
     const sportKey = selectedSport.toLowerCase();
     return arbitrages.filter((arb) =>
@@ -61,18 +74,19 @@ export default function ArbitrageList() {
   }, [arbitrages, selectedSport]);
 
   // 🔗 Agrupación por partido
-  const grouped = useMemo(() => {
-    return filteredArbitrages.reduce((acc, arb) => {
+  const grouped = useMemo<Record<string, Arbitrage[]>>(() => {
+    return filteredArbitrages.reduce<Record<string, Arbitrage[]>>((acc, arb) => {
       const key = `${arb.home_team} vs ${arb.away_team} @ ${arb.match_date}`;
       if (!acc[key]) acc[key] = [];
       acc[key].push(arb);
       return acc;
-    }, {} as Record<string, any[]>);
+    }, {});
   }, [filteredArbitrages]);
 
   const hasArbitrages = filteredArbitrages.length > 0;
-  const currentSportName =
-    SPORT_FILTERS.find((f) => f.key === selectedSport)?.name || selectedSport;
+  const currentSportLabelKey =
+    SPORT_FILTERS.find((f) => f.key === selectedSport)?.nameKey || "arbitrage.sports.All";
+  const currentSportName = t(currentSportLabelKey) as string;
 
   return (
     <>
@@ -98,20 +112,21 @@ export default function ArbitrageList() {
         />
 
         <main className="content-area">
+          <UserProfileCard user={user} />
           <BankControl bank={bank} setBank={setBank} />
 
           <div className="arbitrage-panel">
             <h2 className="panel-title">
-              Oportunidades de Arbitraje{" "}
-              {selectedSport !== "All" ? `en ${currentSportName}` : ""}
+              {selectedSport !== "All"
+                ? (t("arbitrage.panel.titleWithSport", { sport: currentSportName }) as string)
+                : (t("arbitrage.panel.title") as string)}
             </h2>
 
             {!hasArbitrages && (
               <p className="no-arbs-message">
-                No hay oportunidades de arbitraje disponibles{" "}
                 {selectedSport !== "All"
-                  ? `para ${currentSportName}.`
-                  : "en este momento."}
+                  ? (t("arbitrage.panel.emptySport", { sport: currentSportName }) as string)
+                  : (t("arbitrage.panel.emptyAll") as string)}
               </p>
             )}
 

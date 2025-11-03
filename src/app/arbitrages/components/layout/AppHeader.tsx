@@ -7,6 +7,8 @@ import SportFilterToggle from "../ui/SportFilterToggle";
 import Navigation from "./Navigation";
 import LogoutButton from "../../../components/LogoutButton";
 import { useThemeContext } from "../../../components/ThemeProvider";
+import LanguageSelector from "../../../components/LanguageSelector";
+import { useLanguage } from "../../../context/LanguageProvider";
 
 const AppHeader = ({
   isSidebarOpen,
@@ -16,13 +18,14 @@ const AppHeader = ({
   setIsSidebarOpen: (isOpen: boolean) => void;
 }) => {
   const { theme, toggleTheme } = useThemeContext();
+  const { t } = useLanguage();
 
   return (
     <header className="app-header flex items-center justify-between px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-primary)]">
       {/* ⬅️ IZQUIERDA: Logo + Navegación */}
       <div className="flex items-center gap-6">
         <h1 className="app-logo text-xl font-bold text-[var(--color-text-accent)]">
-          ArbitrageHub
+          {t("arbitrage.headerTitle") as string}
         </h1>
         <Navigation />
       </div>
@@ -33,6 +36,7 @@ const AppHeader = ({
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
         />
+        <LanguageSelector />
         <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
         <LogoutButton /> {/* 🔥 Botón de logout */}
       </div>

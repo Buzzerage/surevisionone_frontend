@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../components/supabaseClient";
+import type { Session } from "@supabase/supabase-js";
 
 /**
  * Hook para proteger rutas que requieren autenticación.
@@ -12,7 +13,7 @@ import { supabase } from "../components/supabaseClient";
  */
 export function useAuthGuard(redirectTo: string = "/") {
   const router = useRouter();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

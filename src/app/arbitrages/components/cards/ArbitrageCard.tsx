@@ -1,4 +1,5 @@
 // src/components/cards/ArbitrageCard.tsx
+"use client";
 
 import React, { useState, useEffect } from "react"; // ⬅️ Importaciones CLAVE
 import BetInfo from "./BetInfo";
@@ -6,6 +7,7 @@ import ProfitBadge from "../ui/ProfitBadge";
 import NewBadge from "../ui/NewBadge";
 import { isRecent } from "../../utils/helpers";
 import { Arbitrage, StakeResult } from "../../utils/types";
+import { useLanguage } from "../../../context/LanguageProvider";
 
 type ArbitrageCardProps = {
     arb: Arbitrage;
@@ -14,18 +16,19 @@ type ArbitrageCardProps = {
 
 const ArbitrageCard = ({ arb, stakes }: ArbitrageCardProps) => {
     // 1. Estado para forzar la re-renderización periódica y actualizar el tiempo
-    const [currentTime, setCurrentTime] = useState(Date.now());
-    
+    const [, forceReRender] = useState(Date.now());
+    const { t } = useLanguage();
+
     // 2. Efecto para establecer un temporizador
     useEffect(() => {
-        // Actualiza el estado currentTime cada 1000ms (1 segundo)
+        // Actualiza el estado cada segundo para recalcular el estado "Nuevo"
         const intervalId = setInterval(() => {
-            setCurrentTime(Date.now());
+            forceReRender(Date.now());
         }, 1000);
 
         // Función de limpieza: detiene el temporizador cuando el componente se desmonta
         return () => clearInterval(intervalId);
-    }, []); 
+    }, []);
 
     // 3. Lógica de "Nuevo" que se recalcula en cada renderizado
     // El '5' indica que un arbitraje es nuevo por 5 minutos
@@ -46,37 +49,37 @@ const ArbitrageCard = ({ arb, stakes }: ArbitrageCardProps) => {
             <div className="arb-grid" style={{ marginTop: "0.6rem" }}>
                 {arb.type === "Back vs Lay" ? (
                     <>
-                        <BetInfo 
-                            type="Back" 
-                            player={arb.player} 
-                            bookmaker={arb.back_bookmaker} 
-                            odds={arb.back_odds} 
-                            stake={stakes.stakeBack} 
+                        <BetInfo
+                            type={t('arbitrage.bet.back') as string}
+                            player={arb.player}
+                            bookmaker={arb.back_bookmaker}
+                            odds={arb.back_odds}
+                            stake={stakes.stakeBack}
                         />
-                        <BetInfo 
-                            type="Lay" 
-                            player={arb.player} 
-                            bookmaker={arb.lay_bookmaker} 
-                            odds={arb.lay_odds} 
-                            stake={stakes.stakeLay} 
-                            liability={stakes.liabilityLay} 
+                        <BetInfo
+                            type={t('arbitrage.bet.lay') as string}
+                            player={arb.player}
+                            bookmaker={arb.lay_bookmaker}
+                            odds={arb.lay_odds}
+                            stake={stakes.stakeLay}
+                            liability={stakes.liabilityLay}
                         />
                     </>
                 ) : (
                     <>
-                        <BetInfo 
-                            type="Back" 
-                            team={`Home: ${arb.home?.team}`} 
-                            bookmaker={arb.home?.bookmaker} 
-                            odds={arb.home?.odds} 
-                            stake={stakes.stakeHome} 
+                        <BetInfo
+                            type={t('arbitrage.bet.back') as string}
+                            team={`${t('arbitrage.bet.home') as string}: ${arb.home?.team}`}
+                            bookmaker={arb.home?.bookmaker}
+                            odds={arb.home?.odds}
+                            stake={stakes.stakeHome}
                         />
-                        <BetInfo 
-                            type="Back" 
-                            team={`Away: ${arb.away?.team}`} 
-                            bookmaker={arb.away?.bookmaker} 
-                            odds={arb.away?.odds} 
-                            stake={stakes.stakeAway} 
+                        <BetInfo
+                            type={t('arbitrage.bet.back') as string}
+                            team={`${t('arbitrage.bet.away') as string}: ${arb.away?.team}`}
+                            bookmaker={arb.away?.bookmaker}
+                            odds={arb.away?.odds}
+                            stake={stakes.stakeAway}
                         />
                     </>
                 )}

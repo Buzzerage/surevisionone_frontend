@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google"; 
 import "./globals.css";
 // ⚠️ IMPORTAR EL COMPONENTE DE TEMA
-import ThemeProvider from "./components/ThemeProvider"; 
+import ThemeProvider from "./components/ThemeProvider";
+import { LanguageProvider } from "./context/LanguageProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,15 +30,17 @@ export default function RootLayout({
     // Es crucial que el <html> NO tenga el atributo data-theme aquí, 
     // ya que el ThemeProvider lo maneja de forma dinámica.
     // También cambié lang="en" por "es" o lo que necesites.
-    <html lang="es"> 
+    <html lang="es">
       <body
         // Clases de fuente de Next.js
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* 🚀 ENVUELVE LA APLICACIÓN CON EL PROVEEDOR DE TEMAS */}
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        {/* 🚀 ENVUELVE LA APLICACIÓN CON EL PROVEEDOR DE IDIOMA Y TEMA */}
+        <LanguageProvider>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

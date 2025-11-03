@@ -1,8 +1,23 @@
 // src/components/cards/BetInfo.tsx
+"use client";
 import React from "react";
+import { useLanguage } from "../../../context/LanguageProvider";
 
-const BetInfo = ({ type, player, team, bookmaker, odds, stake, liability }: any) => {
-    const isBack = type === "Back";
+type BetInfoProps = {
+    type: string;
+    player?: string;
+    team?: string;
+    bookmaker?: string;
+    odds?: number | string;
+    stake?: number | string;
+    liability?: number | string;
+};
+
+const BetInfo = ({ type, player, team, bookmaker, odds, stake, liability }: BetInfoProps) => {
+    const { t } = useLanguage();
+    const normalizedType = type.toLowerCase();
+    const backLabel = (t('arbitrage.bet.back') as string).toLowerCase();
+    const isBack = normalizedType === "back" || normalizedType === backLabel;
     return (
         <div className={`bet-card ${isBack ? "bet-back" : "bet-lay"} fade-in`}>
             <div className="bet-header">
@@ -18,11 +33,11 @@ const BetInfo = ({ type, player, team, bookmaker, odds, stake, liability }: any)
             <div className="bet-footer">
                 <span className="bookmaker-pill">{bookmaker}</span>
                 <span className="muted">
-                    <span className="stake-value">€</span> Stake: <span className="stake-value">{stake}€</span>
+                    <span className="stake-value">€</span> {t('arbitrage.bet.stake') as string}: <span className="stake-value">{stake}€</span>
                 </span>
                 {liability && (
                     <span className="muted">
-                        <span className="liability-value">⚠</span> Liability: <span className="liability-value">{liability}€</span>
+                        <span className="liability-value">⚠</span> {t('arbitrage.bet.liability') as string}: <span className="liability-value">{liability}€</span>
                     </span>
                 )}
             </div>

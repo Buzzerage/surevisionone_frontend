@@ -27,5 +27,5 @@ export default function ArbitragesPage() {
   }
 
   // ✅ Si hay sesión, renderiza el contenido
-  return <ArbitrageList />;
+  return <ArbitrageList user={user} />;
 }

@@ -1,6 +1,8 @@
 // src/components/layout/SportFilter.tsx
+"use client";
 import React from "react";
 import { SPORT_FILTERS } from "../../utils/constants";
+import { useLanguage } from "../../../context/LanguageProvider";
 
 type SportFilterProps = {
     selectedSport: string;
@@ -10,6 +12,7 @@ type SportFilterProps = {
 };
 
 const SportFilter = ({ selectedSport, setSelectedSport, isSidebarOpen, setIsSidebarOpen }: SportFilterProps) => {
+    const { t } = useLanguage();
     const handleSelectSport = (sportKey: string) => {
         setSelectedSport(sportKey);
         // Cierra la sidebar después de seleccionar un deporte en móvil
@@ -20,7 +23,7 @@ const SportFilter = ({ selectedSport, setSelectedSport, isSidebarOpen, setIsSide
 
     return (
         <aside id="sport-sidebar" className={`sport-sidebar ${isSidebarOpen ? "open" : ""}`}>
-            <h3 className="sidebar-title">FILTRAR DEPORTES</h3>
+            <h3 className="sidebar-title">{t('arbitrage.filters.heading') as string}</h3>
             <div className="filter-list">
                 {SPORT_FILTERS.map((sport) => {
                     const Icon = sport.icon;
@@ -33,7 +36,7 @@ const SportFilter = ({ selectedSport, setSelectedSport, isSidebarOpen, setIsSide
                             aria-pressed={isActive}
                         >
                             <Icon className="sport-icon" />
-                            <span className="sport-name">{sport.name}</span>
+                            <span className="sport-name">{t(sport.nameKey) as string}</span>
                         </button>
                     );
                 })}

@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Loader } from "lucide-react";
+import { useLanguage } from "../context/LanguageProvider";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function LogoutButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     setLoading(true);
@@ -39,7 +41,7 @@ export default function LogoutButton() {
       ) : (
         <LogOut className="w-4 h-4" />
       )}
-      <span>{loading ? "Cerrando..." : "Cerrar sesión"}</span>
+      <span>{loading ? `${t('common.loading') as string}` : (t('common.logout') as string)}</span>
     </button>
   );
 }

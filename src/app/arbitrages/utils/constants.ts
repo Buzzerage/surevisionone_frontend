@@ -12,12 +12,12 @@ import {
 
 // Lista de deportes con claves en inglés (minúsculas) para el filtrado
 export const SPORT_FILTERS = [
-    { name: "Todos", icon: MdList, key: "All" },
-    { name: "Fútbol", icon: MdSportsSoccer, key: "football" },
-    { name: "Baloncesto", icon: MdSportsBasketball, key: "basketball" },
-    { name: "Tenis", icon: MdSportsTennis, key: "tennis" },
-    { name: "Voleibol", icon: MdSportsVolleyball, key: "volleyball" },
-    { name: "Hockey", icon: MdSportsHockey, key: "hockey" },
-    { name: "Béisbol", icon: MdSportsBaseball, key: "baseball" },
-    { name: "Rugby", icon: MdSports , key: "rugby" },
+    { nameKey: "arbitrage.sports.All", icon: MdList, key: "All" },
+    { nameKey: "arbitrage.sports.football", icon: MdSportsSoccer, key: "football" },
+    { nameKey: "arbitrage.sports.basketball", icon: MdSportsBasketball, key: "basketball" },
+    { nameKey: "arbitrage.sports.tennis", icon: MdSportsTennis, key: "tennis" },
+    { nameKey: "arbitrage.sports.volleyball", icon: MdSportsVolleyball, key: "volleyball" },
+    { nameKey: "arbitrage.sports.hockey", icon: MdSportsHockey, key: "hockey" },
+    { nameKey: "arbitrage.sports.baseball", icon: MdSportsBaseball, key: "baseball" },
+    { nameKey: "arbitrage.sports.rugby", icon: MdSports , key: "rugby" },
 ];
