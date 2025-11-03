@@ -72,13 +72,7 @@ export const useLanguageContext = () => {
 };
 
 export default function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<LanguageCode>(() => {
-    const stored = readStoredLanguage();
-    if (stored) return stored;
-    const detected = detectBrowserLanguage();
-    applyLanguageToDocument(detected);
-    return detected;
-  });
+  const [language, setLanguageState] = useState<LanguageCode>(DEFAULT_LANGUAGE);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const languageOptions = useMemo(() => getLanguageOptions(language), [language]);
@@ -90,6 +84,20 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
 
   useEffect(() => {
     let active = true;
+
+    const determineLocalLanguage = () => {
+      const stored = readStoredLanguage();
+      const fallback = stored ?? detectBrowserLanguage();
+      return normalizeLanguage(fallback);
+    };
+
+    const applyLocalLanguage = () => {
+      const resolved = determineLocalLanguage();
+      if (active) {
+        setLanguageState(resolved);
+      }
+      return resolved;
+    };
 
     const fetchProfileLanguage = async (id: string) => {
       try {
@@ -113,6 +121,8 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
     };
 
     const initialize = async () => {
+      applyLocalLanguage();
+
       try {
         const {
           data: { user },
@@ -147,8 +157,7 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
         await fetchProfileLanguage(session.user.id);
       } else {
         setUserId(null);
-        const fallback = readStoredLanguage() ?? detectBrowserLanguage();
-        setLanguageState(fallback);
+        applyLocalLanguage();
       }
     });
 
