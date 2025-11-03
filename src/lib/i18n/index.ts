@@ -18,6 +18,7 @@ export const getLanguageOptions = (language: LanguageCode) => {
     code,
     flag: LANGUAGE_FLAGS[code],
     label: names[code],
+    codeLabel: code.toUpperCase(),
   }));
 };
 

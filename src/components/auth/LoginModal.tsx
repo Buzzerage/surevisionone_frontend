@@ -25,6 +25,10 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const [bettingRegion, setBettingRegion] = useState<"EU" | "UK" | "">("");
   const { language } = useLanguageContext();
   const copy = useAppTranslations("auth");
+  const regionFlags: Record<"EU" | "UK", string> = {
+    EU: "🇪🇸",
+    UK: "🇬🇧",
+  };
 
   useEffect(() => {
     setVisible(true);
@@ -213,8 +217,19 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                               ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
                               : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
                           }`}
+                          aria-label={copy.regionOptions[region as "EU" | "UK"]}
                         >
-                          {copy.regionOptions[region as "EU" | "UK"]}
+                          <span className="flex flex-col items-center gap-1">
+                            <span className="text-2xl" aria-hidden="true">
+                              {regionFlags[region as "EU" | "UK"]}
+                            </span>
+                            <span className="text-xs font-semibold uppercase tracking-wide">
+                              {region}
+                            </span>
+                            <span className="text-[10px] font-medium normal-case text-[var(--color-text-secondary)]" aria-hidden="true">
+                              {copy.regionOptions[region as "EU" | "UK"]}
+                            </span>
+                          </span>
                         </button>
                       );
                     })}

@@ -140,22 +140,22 @@ export default function ArbitrageList() {
   }, [status, arbitrages]);
 
   const sportOptions = useMemo(() => {
-    const options = new Map<string, SportFilterOption>();
-    baseFilters.forEach((filter) => options.set(filter.key, filter));
+    const dynamicOptions = new Map<string, SportFilterOption>();
 
     arbitrages.forEach((arb) => {
       const option = resolveSportFilterOption(arb.sport_key, arb.sport, language);
-      if (!options.has(option.key)) {
-        options.set(option.key, option);
+      if (!dynamicOptions.has(option.key)) {
+        dynamicOptions.set(option.key, option);
       }
     });
 
-    const allOption = options.get(ALL_SPORT_FILTER_KEY) ?? baseFilters[0];
-    const dynamicOptions = Array.from(options.values()).filter(
-      (option) => option.key !== ALL_SPORT_FILTER_KEY
-    );
-    dynamicOptions.sort((a, b) => collator.compare(a.name, b.name));
-    return [allOption, ...dynamicOptions];
+    const allOption =
+      baseFilters.find((filter) => filter.key === ALL_SPORT_FILTER_KEY) ?? baseFilters[0];
+
+    const sortedOptions = Array.from(dynamicOptions.values());
+    sortedOptions.sort((a, b) => collator.compare(a.name, b.name));
+
+    return allOption ? [allOption, ...sortedOptions] : sortedOptions;
   }, [arbitrages, baseFilters, language, collator]);
 
   useEffect(() => {

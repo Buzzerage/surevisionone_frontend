@@ -1,5 +1,7 @@
 import type { LanguageCode } from "./language";
 
+type BettingRegion = "EU" | "UK";
+
 type LandingFeature = {
   title: string;
   description: string;
@@ -45,6 +47,10 @@ type ProfileCopy = {
     fullName: string;
     email: string;
     language: string;
+    region: string;
+    regionOptions: Record<BettingRegion, string>;
+    savePreferences: string;
+    savingPreferences: string;
     activePlan: string;
     planStatus: string;
     renewal: string;
@@ -93,6 +99,8 @@ type ProfileCopy = {
     deleteTokenMissing: string;
     deleteFailed: string;
     deleteSuccess: string;
+    preferencesSaved: string;
+    preferencesSaveFailed: string;
   };
   planLibrary: Record<string, {
     description: string;
@@ -191,6 +199,20 @@ type AuthCopy = {
     UK: string;
   };
   forgotInstructions: string;
+  restore: {
+    title: string;
+    subtitle: string;
+    newPassword: string;
+    confirmPassword: string;
+    submit: string;
+    verifying: string;
+    success: string;
+    invalid: string;
+    mismatch: string;
+    requirements: string;
+    genericError: string;
+    goToPanel: string;
+  };
   success: {
     reset: string;
     register: string;
@@ -285,6 +307,21 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         UK: "United Kingdom (UK)",
       },
       forgotInstructions: "Enter your email and we'll send you a secure reset link.",
+      restore: {
+        title: "Reset your password",
+        subtitle: "Choose a new secure password to regain access to your account.",
+        newPassword: "New password",
+        confirmPassword: "Confirm new password",
+        submit: "Update password",
+        verifying: "Verifying your reset link...",
+        success: "Your password was updated. You can continue to your dashboard.",
+        invalid: "The recovery link is invalid or has expired.",
+        mismatch: "The passwords do not match.",
+        requirements:
+          "Use at least 12 characters including lowercase letters, uppercase letters, and numbers.",
+        genericError: "We couldn't update the password. Try again.",
+        goToPanel: "Go to dashboard",
+      },
       success: {
         reset: "We've sent you a secure link to reset your password. Check your inbox.",
         register:
@@ -429,6 +466,13 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         fullName: "Full name",
         email: "Email address",
         language: "Preferred language",
+        region: "Betting region",
+        regionOptions: {
+          EU: "Europe (EU)",
+          UK: "United Kingdom (UK)",
+        },
+        savePreferences: "Save preferences",
+        savingPreferences: "Saving...",
         activePlan: "Active plan",
         planStatus: "Plan status",
         renewal: "Next renewal",
@@ -483,6 +527,8 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         deleteFailed: "We couldn't delete the account.",
         deleteSuccess:
           "Your account was deleted successfully. We'll redirect you to the homepage.",
+        preferencesSaved: "Your preferences were updated successfully.",
+        preferencesSaveFailed: "We couldn't save your preferences.",
       },
       planLibrary: {
         Free: {
@@ -645,6 +691,21 @@ export const translations: Record<LanguageCode, AppTranslations> = {
       },
       forgotInstructions:
         "Introduce tu correo electrónico para enviarte un enlace seguro de restablecimiento.",
+      restore: {
+        title: "Restablecer contraseña",
+        subtitle: "Elige una nueva contraseña segura para recuperar el acceso a tu cuenta.",
+        newPassword: "Nueva contraseña",
+        confirmPassword: "Confirmar contraseña",
+        submit: "Actualizar contraseña",
+        verifying: "Verificando tu enlace de recuperación...",
+        success: "Tu contraseña se actualizó. Ya puedes continuar al panel.",
+        invalid: "El enlace de recuperación no es válido o ha expirado.",
+        mismatch: "Las contraseñas no coinciden.",
+        requirements:
+          "Usa al menos 12 caracteres incluyendo letras minúsculas, mayúsculas y números.",
+        genericError: "No pudimos actualizar la contraseña. Inténtalo nuevamente.",
+        goToPanel: "Ir al panel",
+      },
       success: {
         reset: "Te hemos enviado un enlace seguro para restablecer tu contraseña. Revisa tu bandeja de entrada.",
         register:
@@ -789,6 +850,13 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         fullName: "Nombre completo",
         email: "Correo electrónico",
         language: "Idioma preferido",
+        region: "Región de apuestas",
+        regionOptions: {
+          EU: "Europa (UE)",
+          UK: "Reino Unido (UK)",
+        },
+        savePreferences: "Guardar preferencias",
+        savingPreferences: "Guardando...",
         activePlan: "Plan activo",
         planStatus: "Estado del plan",
         renewal: "Próxima renovación",
@@ -842,6 +910,8 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         deleteTokenMissing: "No se pudo validar tu sesión para eliminar la cuenta.",
         deleteFailed: "No se pudo eliminar la cuenta.",
         deleteSuccess: "Tu cuenta se eliminó correctamente. Te redirigiremos al inicio.",
+        preferencesSaved: "Tus preferencias se guardaron correctamente.",
+        preferencesSaveFailed: "No pudimos guardar tus preferencias.",
       },
       planLibrary: {
         Free: {

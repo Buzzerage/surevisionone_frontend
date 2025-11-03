@@ -50,8 +50,6 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
         <Logo />
 
         <div className="flex items-center gap-4">
-          <LanguageMenu />
-
           <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
           <div className="relative" ref={menuRef}>

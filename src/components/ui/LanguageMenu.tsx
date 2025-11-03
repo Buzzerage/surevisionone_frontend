@@ -10,7 +10,7 @@ type LanguageMenuProps = {
 };
 
 const LanguageMenu = ({ className }: LanguageMenuProps) => {
-  const { language, setLanguage, options, loading } = useLanguageContext();
+  const { language, setLanguage, saveLanguagePreference, options, loading } = useLanguageContext();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -37,11 +37,15 @@ const LanguageMenu = ({ className }: LanguageMenuProps) => {
         onClick={() => setOpen((prev) => !prev)}
         disabled={loading}
         className="flex items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-3 py-1.5 text-sm font-semibold text-[var(--color-text-accent)] shadow-sm transition hover:bg-[var(--color-hover-bg)]"
+        aria-label={current?.label}
       >
         <span className="text-lg leading-none" aria-hidden="true">
           {current?.flag}
         </span>
-        <span className="hidden sm:inline">{current?.label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide" aria-hidden="true">
+          {current?.codeLabel}
+        </span>
+        <span className="sr-only">{current?.label}</span>
         <ChevronDown className="h-4 w-4" />
       </button>
 
@@ -54,15 +58,20 @@ const LanguageMenu = ({ className }: LanguageMenuProps) => {
               onClick={() => {
                 setOpen(false);
                 void setLanguage(option.code);
+                void saveLanguagePreference(option.code).catch(() => undefined);
               }}
               className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition hover:bg-[var(--color-hover-bg)] ${
                 option.code === language ? "text-[var(--color-accent-primary)]" : "text-[var(--color-text-primary)]"
               }`}
+              aria-label={option.label}
             >
               <span className="text-lg" aria-hidden="true">
                 {option.flag}
               </span>
-              <span>{option.label}</span>
+              <span className="flex items-center gap-2" aria-hidden="true">
+                <span className="text-xs font-semibold uppercase tracking-wide">{option.codeLabel}</span>
+                <span className="text-[var(--color-text-secondary)]">{option.label}</span>
+              </span>
             </button>
           ))}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
@@ -13,6 +13,7 @@ import { normalizePlanName, resolveRenewalDate } from "./utils";
 import type { FeedbackState, PlanObject, ProfileUser } from "./types";
 import LanguageSelectField from "@/components/ui/LanguageSelectField";
 import { useLanguageContext } from "@/providers/LanguageProvider";
+import type { LanguageCode } from "@/lib/i18n/language";
 import { useAppTranslations } from "@/lib/i18n";
 
 const emptyForm: PasswordFormValues = {
@@ -21,19 +22,41 @@ const emptyForm: PasswordFormValues = {
   confirmPassword: "",
 };
 
+type BettingRegion = "EU" | "UK";
+
+const REGION_FLAGS: Record<BettingRegion, string> = {
+  EU: "🇪🇸",
+  UK: "🇬🇧",
+};
+
+const REGION_OPTIONS: BettingRegion[] = ["EU", "UK"];
+
+const resolveLanguageFromMetadata = (value: unknown): LanguageCode | null => {
+  if (value === "es") return "es";
+  if (value === "en") return "en";
+  return null;
+};
+
+const resolveRegionFromMetadata = (value: unknown): BettingRegion | null => {
+  if (value === "UK") return "UK";
+  if (value === "EU") return "EU";
+  return null;
+};
+
 type ProfilePanelProps = {
   user: User;
 };
 
 const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const router = useRouter();
-  const { language } = useLanguageContext();
+  const { language, saveLanguagePreference } = useLanguageContext();
   const copy = useAppTranslations("profile");
 
   const [formValues, setFormValues] = useState<PasswordFormValues>(emptyForm);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const planSource = useMemo<ProfileUser["plan"]>(() => {
     if (!user) return undefined;
@@ -75,6 +98,14 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const refreshIntervalMinutes = quota?.refreshIntervalMinutes ?? quota?.refresh_interval_minutes;
 
   const userMetadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const metadataLanguage = resolveLanguageFromMetadata(userMetadata.language);
+  const metadataRegion = resolveRegionFromMetadata(userMetadata.betting_region);
+  const initialProfileLanguage = metadataLanguage ?? language;
+  const initialProfileRegion = metadataRegion ?? "EU";
+  const [profileLanguage, setProfileLanguage] = useState<LanguageCode>(initialProfileLanguage);
+  const [draftLanguage, setDraftLanguage] = useState<LanguageCode>(language);
+  const [profileRegion, setProfileRegion] = useState<BettingRegion>(initialProfileRegion);
+  const [draftRegion, setDraftRegion] = useState<BettingRegion>(initialProfileRegion);
   const fullName =
     (userMetadata.full_name as string | undefined) ??
     (userMetadata.fullName as string | undefined) ??
@@ -86,9 +117,52 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
   const userEmail = user?.email ?? undefined;
   const email = userEmail ?? "—";
 
+  useEffect(() => {
+    setProfileLanguage(initialProfileLanguage);
+  }, [initialProfileLanguage]);
+
+  useEffect(() => {
+    setDraftLanguage(language);
+  }, [language]);
+
+  useEffect(() => {
+    setProfileRegion(initialProfileRegion);
+    setDraftRegion(initialProfileRegion);
+  }, [initialProfileRegion]);
+
   const updateFormValue = (field: keyof PasswordFormValues, value: string) => {
     setFormValues((previous) => ({ ...previous, [field]: value }));
   };
+
+  const handleLanguageDraftChange = useCallback((code: LanguageCode) => {
+    setDraftLanguage(code);
+  }, []);
+
+  const handleRegionSelect = useCallback((region: BettingRegion) => {
+    setDraftRegion(region);
+  }, []);
+
+  const preferencesDirty = draftLanguage !== profileLanguage || draftRegion !== profileRegion;
+
+  const handleSavePreferences = useCallback(async () => {
+    setFeedback(null);
+    setIsSavingPreferences(true);
+
+    try {
+      await saveLanguagePreference(draftLanguage, { betting_region: draftRegion });
+      setProfileLanguage(draftLanguage);
+      setProfileRegion(draftRegion);
+      setFeedback({ type: "success", message: copy.feedback.preferencesSaved });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : copy.feedback.preferencesSaveFailed;
+      setFeedback({ type: "error", message });
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  }, [copy.feedback.preferencesSaveFailed, copy.feedback.preferencesSaved, draftLanguage, draftRegion, saveLanguagePreference]);
 
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -257,7 +331,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       });
       setTimeout(async () => {
         try {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: "local" });
         } catch (signOutError) {
           if (process.env.NODE_ENV !== "production") {
             console.error("Unable to sign out after deleting the account", signOutError);
@@ -342,7 +416,36 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               </div>
               <div>
                 <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.language}</dt>
-                <LanguageSelectField />
+                <LanguageSelectField value={draftLanguage} onChange={handleLanguageDraftChange} />
+              </div>
+              <div>
+                <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.region}</dt>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {REGION_OPTIONS.map((region) => {
+                    const isActive = draftRegion === region;
+                    return (
+                      <button
+                        key={region}
+                        type="button"
+                        onClick={() => handleRegionSelect(region)}
+                        className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${
+                          isActive
+                            ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
+                            : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
+                        }`}
+                        aria-label={copy.mainCard.regionOptions[region]}
+                      >
+                        <span className="text-2xl" aria-hidden="true">
+                          {REGION_FLAGS[region]}
+                        </span>
+                        <span>{region}</span>
+                        <span className="text-[var(--color-text-secondary)] normal-case" aria-hidden="true">
+                          {copy.mainCard.regionOptions[region]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.activePlan}</dt>
@@ -366,6 +469,23 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
                 </div>
               ) : null}
             </dl>
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleSavePreferences}
+                disabled={!preferencesDirty || isSavingPreferences}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--color-accent-primary)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)] transition hover:bg-[var(--color-accent-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingPreferences ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {copy.mainCard.savingPreferences}
+                  </>
+                ) : (
+                  <>{copy.mainCard.savePreferences}</>
+                )}
+              </button>
+            </div>
           </ProfileCard>
 
           <ProfileCard

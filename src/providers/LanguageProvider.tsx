@@ -9,12 +9,17 @@ import { DEFAULT_LANGUAGE, type LanguageCode } from "@/lib/i18n/language";
 export type LanguageOption = {
   code: LanguageCode;
   label: string;
+  codeLabel: string;
   flag: string;
 };
 
 type LanguageContextType = {
   language: LanguageCode;
   setLanguage: (code: LanguageCode) => Promise<void>;
+  saveLanguagePreference: (
+    code?: LanguageCode,
+    profileOverrides?: Record<string, unknown>
+  ) => Promise<void>;
   loading: boolean;
   options: LanguageOption[];
 };
@@ -167,33 +172,62 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
     };
   }, []);
 
-  const handleSetLanguage = useCallback(
-    async (code: LanguageCode) => {
-      setLanguageState(code);
+  const handleSetLanguage = useCallback(async (code: LanguageCode) => {
+    setLanguageState(code);
+  }, []);
 
-      if (!userId) return;
+  const handleSaveLanguage = useCallback(
+    async (code?: LanguageCode, profileOverrides?: Record<string, unknown>) => {
+      const nextLanguage = code ?? language;
+
+      if (!userId) {
+        return;
+      }
 
       try {
         const { error } = await supabase
           .from("profiles")
-          .update({ language: code })
-          .eq("id", userId);
+          .upsert(
+            { id: userId, language: nextLanguage, ...(profileOverrides ?? {}) },
+            { onConflict: "id", returning: "minimal" }
+          );
 
-        if (error && process.env.NODE_ENV !== "production") {
-          console.warn("No se pudo actualizar el idioma en el perfil", error);
+        if (error) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("No se pudo actualizar el idioma en el perfil", error);
+          }
+          throw new Error(error.message ?? "Unable to update profile language");
+        }
+
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: { language: nextLanguage, ...(profileOverrides ?? {}) },
+        });
+
+        if (metadataError) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("No se pudo sincronizar el idioma del usuario", metadataError);
+          }
+          throw new Error(metadataError.message ?? "Unable to sync user language");
         }
       } catch (error) {
         if (process.env.NODE_ENV !== "production") {
           console.warn("Error inesperado al guardar el idioma", error);
         }
+        throw error;
       }
     },
-    [userId]
+    [language, userId]
   );
 
   const value = useMemo<LanguageContextType>(
-    () => ({ language, setLanguage: handleSetLanguage, loading, options: languageOptions }),
-    [handleSetLanguage, language, languageOptions, loading]
+    () => ({
+      language,
+      setLanguage: handleSetLanguage,
+      saveLanguagePreference: handleSaveLanguage,
+      loading,
+      options: languageOptions,
+    }),
+    [handleSaveLanguage, handleSetLanguage, language, languageOptions, loading]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
