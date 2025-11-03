@@ -19,6 +19,25 @@ type LoginModalProps = {
   onClose?: () => void;
 };
 
+const resolveRestoreRedirect = () => {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin.replace(/\/$/, "")}/restore-password`;
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  if (siteUrl) {
+    return `${siteUrl.replace(/\/$/, "")}/restore-password`;
+  }
+
+  const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL ?? "";
+  if (vercelUrl) {
+    const origin = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
+    return `${origin.replace(/\/$/, "")}/restore-password`;
+  }
+
+  return undefined;
+};
+
 export default function LoginModal({ onClose }: LoginModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -61,7 +80,11 @@ export default function LoginModal({ onClose }: LoginModalProps) {
 
     try {
       if (mode === "forgot") {
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+        const redirectTo = resolveRestoreRedirect();
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+          email,
+          redirectTo ? { redirectTo } : undefined
+        );
 
         if (resetError) {
           throw resetError;

@@ -212,6 +212,8 @@ type AuthCopy = {
     requirements: string;
     genericError: string;
     goToPanel: string;
+    unauthorized: string;
+    sessionMismatch: string;
   };
   success: {
     reset: string;
@@ -316,6 +318,8 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         verifying: "Verifying your reset link...",
         success: "Your password was updated. You can continue to your dashboard.",
         invalid: "The recovery link is invalid or has expired.",
+        unauthorized: "We couldn't verify your request. Request a new recovery email.",
+        sessionMismatch: "This recovery link does not match the account that requested it.",
         mismatch: "The passwords do not match.",
         requirements:
           "Use at least 12 characters including lowercase letters, uppercase letters, and numbers.",
@@ -700,6 +704,8 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         verifying: "Verificando tu enlace de recuperación...",
         success: "Tu contraseña se actualizó. Ya puedes continuar al panel.",
         invalid: "El enlace de recuperación no es válido o ha expirado.",
+        unauthorized: "No pudimos verificar tu solicitud. Pide un nuevo correo de recuperación.",
+        sessionMismatch: "Este enlace de recuperación no coincide con la cuenta que lo solicitó.",
         mismatch: "Las contraseñas no coinciden.",
         requirements:
           "Usa al menos 12 caracteres incluyendo letras minúsculas, mayúsculas y números.",

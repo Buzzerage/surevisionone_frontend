@@ -20,6 +20,7 @@ export default function RestorePasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [recoveryUserId, setRecoveryUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -55,6 +56,21 @@ export default function RestorePasswordPage() {
       setVerificationState("verifying");
       try {
         await supabase.auth.exchangeCodeForSession({ type: "recovery", code });
+
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          throw userError;
+        }
+
+        if (!user) {
+          throw new Error(restoreCopy.unauthorized);
+        }
+
+        setRecoveryUserId(user.id);
         if (!active) return;
         setVerificationState("ready");
       } catch (verificationError) {
@@ -62,7 +78,11 @@ export default function RestorePasswordPage() {
         if (process.env.NODE_ENV !== "production") {
           console.warn("No se pudo verificar el enlace de recuperación", verificationError);
         }
-        setError(restoreCopy.invalid);
+        const message =
+          verificationError instanceof Error && verificationError.message === restoreCopy.unauthorized
+            ? restoreCopy.unauthorized
+            : restoreCopy.invalid;
+        setError(message);
         setVerificationState("ready");
       }
     };
@@ -72,13 +92,18 @@ export default function RestorePasswordPage() {
     return () => {
       active = false;
     };
-  }, [restoreCopy.invalid, searchParams]);
+  }, [restoreCopy.invalid, restoreCopy.unauthorized, searchParams]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
     if (verificationState !== "ready" || success) {
+      return;
+    }
+
+    if (!recoveryUserId) {
+      setError(restoreCopy.unauthorized);
       return;
     }
 
@@ -98,6 +123,19 @@ export default function RestorePasswordPage() {
     setLoading(true);
 
     try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        throw userError;
+      }
+
+      if (!user || user.id !== recoveryUserId) {
+        throw new Error(restoreCopy.sessionMismatch);
+      }
+
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) {
         throw updateError;
@@ -186,7 +224,7 @@ export default function RestorePasswordPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !recoveryUserId}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-accent-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

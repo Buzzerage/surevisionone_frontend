@@ -181,15 +181,34 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
     async (code?: LanguageCode, profileOverrides?: Record<string, unknown>) => {
       const nextLanguage = code ?? language;
 
-      if (!userId) {
-        return;
-      }
-
       try {
+        let targetUserId = userId;
+
+        if (!targetUserId) {
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError) {
+            if (process.env.NODE_ENV !== "production") {
+              console.warn("No se pudo obtener el usuario actual antes de guardar el idioma", userError);
+            }
+            throw new Error(userError.message ?? "Unable to determine the authenticated user");
+          }
+
+          if (!user) {
+            throw new Error("No authenticated user available to persist preferences");
+          }
+
+          targetUserId = user.id;
+          setUserId(user.id);
+        }
+
         const { error } = await supabase
           .from("profiles")
           .upsert(
-            { id: userId, language: nextLanguage, ...(profileOverrides ?? {}) },
+            { id: targetUserId, language: nextLanguage, ...(profileOverrides ?? {}) },
             { onConflict: "id", returning: "minimal" }
           );
 
@@ -210,6 +229,8 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
           }
           throw new Error(metadataError.message ?? "Unable to sync user language");
         }
+
+        setLanguageState(nextLanguage);
       } catch (error) {
         if (process.env.NODE_ENV !== "production") {
           console.warn("Error inesperado al guardar el idioma", error);
