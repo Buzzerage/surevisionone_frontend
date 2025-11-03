@@ -6,6 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import Logo from "@/components/common/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LanguageMenu from "@/components/ui/LanguageMenu";
 import { useThemeContext } from "@/providers/ThemeProvider";
 
 type HeaderPublicProps = {
@@ -26,6 +27,9 @@ export default function HeaderPublic({ session, onLogin }: HeaderPublicProps) {
         <Logo />
 
         <div className="flex items-center gap-4">
+          {/* 🌐 Selector de idioma */}
+          <LanguageMenu />
+
           {/* 🔘 Toggle de tema */}
           <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 

@@ -6,6 +6,7 @@ import { Loader, Lock, Mail, RefreshCw, ShieldCheck, X } from "lucide-react";
 import type { AuthError } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase/client";
+import { useLanguageContext } from "@/providers/LanguageProvider";
 
 type LoginModalProps = {
   onClose?: () => void;
@@ -20,6 +21,8 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [bettingRegion, setBettingRegion] = useState<"EU" | "UK" | "">("");
+  const { language } = useLanguageContext();
 
   // animación de entrada
   useEffect(() => {
@@ -38,6 +41,11 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     setVisible(false);
     setTimeout(() => onClose?.(), 300);
   }, [onClose]);
+
+  useEffect(() => {
+    setError(null);
+    setBettingRegion("");
+  }, [mode]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -59,9 +67,39 @@ export default function LoginModal({ onClose }: LoginModalProps) {
       }
 
       if (mode === "register") {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        if (!bettingRegion) {
+          setError("Selecciona tu región de apuestas para continuar.");
+          setLoading(false);
+          return;
+        }
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              language,
+              betting_region: bettingRegion,
+            },
+          },
+        });
         if (signUpError) {
           throw signUpError;
+        }
+
+        const createdUserId = signUpData.user?.id;
+
+        if (createdUserId) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert(
+              { id: createdUserId, language, betting_region: bettingRegion },
+              { onConflict: "id", returning: "minimal" }
+            );
+
+          if (profileError && process.env.NODE_ENV !== "production") {
+            console.warn("No se pudo guardar la región de apuestas en el perfil", profileError);
+          }
         }
 
         setSuccessMessage(
@@ -164,6 +202,33 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 </div>
               )}
 
+              {isRegister && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                    Selecciona tu región de apuestas
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["EU", "UK"].map((region) => {
+                      const isActive = bettingRegion === region;
+                      return (
+                        <button
+                          key={region}
+                          type="button"
+                          onClick={() => setBettingRegion(region as "EU" | "UK")}
+                          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${
+                            isActive
+                              ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
+                              : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
+                          }`}
+                        >
+                          {region === "EU" ? "Europa (EU)" : "Reino Unido (UK)"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {isForgot && (
                 <p className="text-sm text-[var(--color-text-secondary)] text-center">
                   Introduce tu correo electrónico para enviarte un enlace seguro de restablecimiento.
@@ -174,8 +239,8 @@ export default function LoginModal({ onClose }: LoginModalProps) {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold flex items-center justify-center gap-2"
-                disabled={loading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loading || (isRegister && !bettingRegion)}
               >
                 {loading ? (
                   <Loader className="w-5 h-5 animate-spin" />
