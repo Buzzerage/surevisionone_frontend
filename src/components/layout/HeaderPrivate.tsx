@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import Logo from "@/components/common/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LanguageMenu from "@/components/ui/LanguageMenu";
 import { supabase } from "@/lib/supabase/client";
 import { useThemeContext } from "@/providers/ThemeProvider";
 import { useAppTranslations } from "@/lib/i18n";
