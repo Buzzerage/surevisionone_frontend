@@ -25,25 +25,22 @@ export default function RestorePasswordPage() {
   useEffect(() => {
     let active = true;
 
-    const extractCode = () => {
-      const queryCode = searchParams.get("code");
-      if (queryCode) return queryCode;
+    const extractToken = () => {
+      // Token may arrive in query param: ?token=...
+      const urlToken = searchParams.get("token");
+      if (urlToken) return urlToken;
 
-      if (typeof window === "undefined") {
-        return null;
+      // Or via hash (#access_token=...)
+      if (typeof window !== "undefined") {
+        const hashParams = new URLSearchParams(window.location.hash.replace("#", ""));
+        const hashToken = hashParams.get("access_token");
+        if (hashToken) return hashToken;
       }
 
-      const hash = window.location.hash.startsWith("#")
-        ? window.location.hash.slice(1)
-        : window.location.hash;
-      if (!hash) {
-        return null;
-      }
-      const hashParams = new URLSearchParams(hash);
-      return hashParams.get("code");
+      return null;
     };
 
-    const code = extractCode();
+    const code = extractToken();
 
     if (!code) {
       setVerificationState("ready");
@@ -55,7 +52,7 @@ export default function RestorePasswordPage() {
       setError(null);
       setVerificationState("verifying");
       try {
-        await supabase.auth.exchangeCodeForSession({ type: "recovery", code });
+        await supabase.auth.exchangeCodeForSession(code);
 
         const {
           data: { user },
@@ -123,33 +120,26 @@ export default function RestorePasswordPage() {
     setLoading(true);
 
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        throw userError;
-      }
-
-      if (!user || user.id !== recoveryUserId) {
-        throw new Error(restoreCopy.sessionMismatch);
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.user) {
+        throw new Error(restoreCopy.unauthorized);
       }
 
       const { error: updateError } = await supabase.auth.updateUser({ password });
+      
       if (updateError) {
         throw updateError;
       }
 
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError && process.env.NODE_ENV !== "production") {
-        console.warn("No se pudo refrescar la sesión después de restablecer la contraseña", refreshError);
-      }
+      await supabase.auth.signOut({ scope: "global" });
+      localStorage.removeItem("sb-session");
+      sessionStorage.clear();
 
       setSuccess(restoreCopy.success);
+
       setTimeout(() => {
-        router.push("/panel");
-      }, 2000);
+        router.replace("/");
+      }, 1500);
     } catch (submitError) {
       if (process.env.NODE_ENV !== "production") {
         console.warn("No se pudo actualizar la contraseña", submitError);

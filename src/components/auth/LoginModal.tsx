@@ -101,33 +101,22 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           return;
         }
 
-        const profileMetadata = {
-          language,
-          betting_region: bettingRegion,
-        } as const;
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: profileMetadata,
+            data: {
+              betting_region: bettingRegion,
+              language,
+            },
           },
         });
+
         if (signUpError) {
           throw signUpError;
         }
 
-        const createdUserId = signUpData.user?.id;
-
-        if (createdUserId) {
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert({ id: createdUserId, ...profileMetadata }, { onConflict: "id", returning: "minimal" });
-
-          if (profileError && process.env.NODE_ENV !== "production") {
-            console.warn("No se pudo guardar la región de apuestas en el perfil", profileError);
-          }
-        }
+        // No tocar perfiles aquí → lo crea y rellena el trigger automáticamente
 
         setSuccessMessage(copy.success.register);
         return;
@@ -178,15 +167,24 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         {successMessage ? (
           <div className="flex flex-col items-center py-10 text-center space-y-4">
             <ShieldCheck className="w-16 h-16 text-green-500" />
-            <p className="text-lg text-[var(--color-text-accent)]">{successMessage}</p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessMessage(null);
+                handleClose(); // Cierra el modal con animación
+              }}
+              className="text-lg text-[var(--color-text-accent)] cursor-pointer hover:text-blue-400 transition focus:outline-none"
+            >
+              {successMessage}
+            </button>
+
             <button
               type="button"
               className="text-sm text-blue-400 hover:text-blue-300"
               onClick={() => {
                 setSuccessMessage(null);
-                if (mode === "login") {
-                  onClose?.();
-                }
+                handleClose(); // Cierra también desde el botón secundario
               }}
             >
               {mode === "login" ? copy.buttons.continue : copy.buttons.dismiss}
