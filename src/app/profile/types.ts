@@ -23,6 +23,8 @@ export type ProfileUser = {
   full_name?: string;
   name?: string;
   plan?: string | PlanObject;
+  language?: string;
+  betting_region?: string;
 };
 
 export type FeedbackTone = "success" | "info" | "warning" | "error";

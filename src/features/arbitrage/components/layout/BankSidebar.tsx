@@ -1,11 +1,22 @@
 import React from "react";
 import { MdClose } from "react-icons/md";
 
+type BankSidebarCopy = {
+    ariaLabel: string;
+    title: string;
+    description: string;
+    close: string;
+    capitalLabel: string;
+    shortcutsAria: string;
+};
+
 interface BankSidebarProps {
     bank: number;
     onBankChange: React.Dispatch<React.SetStateAction<number>>;
     isSidebarOpen: boolean;
     setIsSidebarOpen: (isOpen: boolean) => void;
+    copy: BankSidebarCopy;
+    currencySymbol: string;
 }
 
 const BankSidebar: React.FC<BankSidebarProps> = ({
@@ -13,6 +24,8 @@ const BankSidebar: React.FC<BankSidebarProps> = ({
     onBankChange,
     isSidebarOpen,
     setIsSidebarOpen,
+    copy,
+    currencySymbol,
 }) => {
     const handleAdjust = (delta: number) => {
         onBankChange((current) => Math.max(0, current + delta));
@@ -22,7 +35,7 @@ const BankSidebar: React.FC<BankSidebarProps> = ({
         <aside
             id="bank-sidebar"
             className={`bank-sidebar ${isSidebarOpen ? "open" : ""}`}
-            aria-label="Gestión de capital"
+            aria-label={copy.ariaLabel}
         >
             <div className="bank-sidebar__header">
                 <div className="bank-sidebar__title">
@@ -30,8 +43,8 @@ const BankSidebar: React.FC<BankSidebarProps> = ({
                         💰
                     </span>
                     <div>
-                        <h3>Capital disponible</h3>
-                        <p>Usamos tu bank para calcular las apuestas sugeridas.</p>
+                        <h3>{copy.title}</h3>
+                        <p>{copy.description}</p>
                     </div>
                 </div>
                 <button
@@ -39,14 +52,14 @@ const BankSidebar: React.FC<BankSidebarProps> = ({
                     className="bank-sidebar__close"
                     onClick={() => setIsSidebarOpen(false)}
                 >
-                    <span className="sr-only">Cerrar panel de bank</span>
+                    <span className="sr-only">{copy.close}</span>
                     <MdClose aria-hidden="true" />
                 </button>
             </div>
 
             <div className="bank-sidebar__section">
                 <div className="bank-sidebar__section-header">
-                    <span className="bank-sidebar__section-title">Capital (Bank)</span>
+                    <span className="bank-sidebar__section-title">{copy.capitalLabel}</span>
                     <div className="bank-sidebar__input-group">
                         <input
                             id="bank-input"
@@ -63,7 +76,7 @@ const BankSidebar: React.FC<BankSidebarProps> = ({
                             aria-describedby="bank-helper"
                         />
                         <span aria-hidden="true" className="bank-sidebar__currency">
-                            €
+                            {currencySymbol}
                         </span>
                     </div>
                 </div>
@@ -71,22 +84,29 @@ const BankSidebar: React.FC<BankSidebarProps> = ({
                 <div
                     className="bank-sidebar__actions"
                     role="group"
-                    aria-label="Atajos para ajustar el bank"
+                    aria-label={copy.shortcutsAria}
                 >
-                    {[ -10, 10, 50, 100 ].map((delta) => (
-                        <button
-                            key={delta}
-                            type="button"
-                            onClick={() => handleAdjust(delta)}
-                            className="bank-sidebar__button"
-                        >
-                            {delta > 0 ? `+${delta}€` : `${delta}€`}
-                        </button>
-                    ))}
+                    {[ -10, 10, 50, 100 ].map((delta) => {
+                        const absolute = Math.abs(delta);
+                        const prefix = delta > 0 ? "+" : "-";
+                        const formatted = `${prefix}${currencySymbol}${absolute}`;
+
+                        return (
+                            <button
+                                key={delta}
+                                type="button"
+                                onClick={() => handleAdjust(delta)}
+                                className="bank-sidebar__button"
+                            >
+                                {formatted}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </aside>
     );
 };
 
+export type { BankSidebarCopy };
 export default BankSidebar;

@@ -6,11 +6,19 @@ import { MailCheck, RefreshCw, ShieldAlert, ShieldCheck, ShieldHalf } from "luci
 import ArbitrageList from "@/features/arbitrage/components/ArbitrageList";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { supabase } from "@/lib/supabase/client";
+import { useAppTranslations } from "@/lib/i18n";
+
+type VerificationMessageState =
+  | { type: "unverified" | "verified" | "generic-error" }
+  | { type: "custom"; text: string }
+  | null;
 
 export default function ArbitragesPage() {
   const router = useRouter();
   const { user, loading } = useSupabaseSession();
-  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
+  const copy = useAppTranslations("panel");
+  const [verificationMessage, setVerificationMessage] =
+    useState<VerificationMessageState>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [verificationAcknowledged, setVerificationAcknowledged] = useState(false);
 
@@ -38,22 +46,20 @@ export default function ArbitragesPage() {
       if (error) throw error;
 
       if (!data.user?.email_confirmed_at) {
-        setVerificationMessage(
-          "Tu cuenta todavía no figura validada. Revisa tu correo o intenta de nuevo en unos instantes."
-        );
+        setVerificationMessage({ type: "unverified" });
         return;
       }
 
-      setVerificationMessage("Validación confirmada. Redirigiéndote al panel seguro...");
+      setVerificationMessage({ type: "verified" });
       setVerificationAcknowledged(true);
       setTimeout(() => {
         router.refresh();
       }, 800);
     } catch (error) {
       if (error instanceof Error) {
-        setVerificationMessage(error.message);
+        setVerificationMessage({ type: "custom", text: error.message });
       } else {
-        setVerificationMessage("No se pudo comprobar el estado de la cuenta. Inténtalo más tarde.");
+        setVerificationMessage({ type: "generic-error" });
       }
     } finally {
       setRefreshing(false);
@@ -65,7 +71,7 @@ export default function ArbitragesPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-4">
         <ShieldHalf className="w-12 h-12 text-[var(--color-accent-primary)] animate-spin" />
-        <p className="text-lg text-[var(--color-text-secondary)]">Cargando sesión segura...</p>
+        <p className="text-lg text-[var(--color-text-secondary)]">{copy.loading}</p>
       </div>
     );
   }
@@ -82,11 +88,12 @@ export default function ArbitragesPage() {
           <div className="flex flex-col items-center gap-4">
             <ShieldAlert className="w-14 h-14 text-yellow-400" />
             <h1 className="text-2xl font-semibold text-[var(--color-text-accent)]">
-              Verifica tu correo electrónico para activar el acceso seguro
+              {copy.verify.heading}
             </h1>
             <p className="text-[var(--color-text-secondary)] text-sm md:text-base">
-              Hemos enviado un mensaje de confirmación a <strong>{user.email}</strong>. Una vez que valides tu cuenta,
-              podrás acceder al panel con todas las medidas de seguridad activadas.
+              {copy.verify.descriptionBeforeEmail}
+              <strong>{user.email}</strong>
+              {copy.verify.descriptionAfterEmail}
             </p>
           </div>
 
@@ -94,13 +101,13 @@ export default function ArbitragesPage() {
             <div className="flex items-start gap-3">
               <MailCheck className="w-5 h-5 mt-0.5 text-[var(--color-accent-primary)]" />
               <p className="text-sm text-[var(--color-text-secondary)]">
-                Si no encuentras el correo, revisa tu carpeta de spam o promociones y marca el mensaje como seguro.
+                {copy.verify.infoSpam}
               </p>
             </div>
             <div className="flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 mt-0.5 text-[var(--color-green-text)]" />
               <p className="text-sm text-[var(--color-text-secondary)]">
-                Tras confirmar, vuelve aquí y presiona el enlace inferior para verificar el estado de tu cuenta.
+                {copy.verify.infoConfirm}
               </p>
             </div>
           </div>
@@ -112,12 +119,27 @@ export default function ArbitragesPage() {
             className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[var(--color-accent-primary)] text-white font-semibold shadow-lg hover:shadow-xl transition disabled:opacity-70"
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? "Comprobando verificación..." : "Ya verifiqué mi correo"}
+            {refreshing ? copy.verify.buttonLoading : copy.verify.buttonIdle}
           </button>
 
-          {verificationMessage && (
-            <p className="text-sm text-[var(--color-text-secondary)]">{verificationMessage}</p>
-          )}
+          {(() => {
+            if (!verificationMessage) {
+              return null;
+            }
+
+            const messageText =
+              verificationMessage.type === "custom"
+                ? verificationMessage.text
+                : verificationMessage.type === "unverified"
+                ? copy.verify.messageUnverified
+                : verificationMessage.type === "generic-error"
+                ? copy.verify.messageGenericError
+                : copy.verify.messageVerified;
+
+            return (
+              <p className="text-sm text-[var(--color-text-secondary)]">{messageText}</p>
+            );
+          })()}
         </div>
       </div>
     );

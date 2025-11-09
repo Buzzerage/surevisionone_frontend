@@ -5,24 +5,12 @@ import type { LucideIcon } from "lucide-react";
 import { Check, DollarSign, Maximize, Rocket, Shield, TrendingUp, Zap } from "lucide-react";
 
 import LoginModal from "@/components/auth/LoginModal";
+import { useLanguageContext } from "@/providers/LanguageProvider";
+import { useAppTranslations } from "@/lib/i18n";
+import type { LandingCopy } from "@/lib/i18n/translations";
 
 type LandingPageProps = {
   onStartClick: () => void;
-};
-
-type Feature = {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-};
-
-type PricingPlan = {
-  name: string;
-  price: string;
-  tagline: string;
-  features: string[];
-  isPopular?: boolean;
-  isFree?: boolean;
 };
 
 type ArbitrageExample = {
@@ -31,95 +19,20 @@ type ArbitrageExample = {
   team2: string;
 };
 
-const FEATURES: Feature[] = [
-  {
-    title: "Arbitraje en Tiempo Real",
-    description:
-      "Escaneo ultrarrápido a través de más de 80 casas de apuestas y exchanges para no perderte ni una oportunidad.",
-    icon: Zap,
-  },
-  {
-    title: "Seguimiento de Beneficios",
-    description:
-      "Visualiza tus ganancias y pérdidas históricas, rendimiento por deporte y análisis detallado de ROI.",
-    icon: TrendingUp,
-  },
-  {
-    title: "Seguridad y Transparencia",
-    description:
-      "Cálculos verificados y encriptación de datos para garantizar la seguridad de tu información financiera.",
-    icon: Shield,
-  },
-  {
-    title: "Calculadora Integrada",
-    description:
-      "Ajusta automáticamente las apuestas 'back' y 'lay' basándose en tu bankroll disponible.",
-    icon: Maximize,
-  },
-];
-
-const PRICING_PLANS: PricingPlan[] = [
-  {
-    name: "Free",
-    price: "€0",
-    tagline: "Acceso permanente a la plataforma con arbitrajes básicos.",
-    features: [
-      "Escaneo en 5 casas de apuestas",
-      "Arbitrajes con beneficio > 3.0%",
-      "Retraso de datos de 30 minutos",
-      "Soporte por documentación",
-    ],
-    isFree: true,
-  },
-  {
-    name: "Starter",
-    price: "€29",
-    tagline: "Ideal para principiantes que empiezan a explorar el arbitraje.",
-    features: [
-      "Escaneo en 20+ casas de apuestas",
-      "Arbitrajes con beneficio > 1.5%",
-      "Notificaciones por email",
-      "Soporte Estándar",
-    ],
-  },
-  {
-    name: "Pro",
-    price: "€99",
-    tagline: "Herramientas avanzadas para arbitrajistas a tiempo parcial.",
-    features: [
-      "Escaneo en 80+ casas de apuestas",
-      "Arbitrajes con beneficio > 0%",
-      "Notificaciones instantáneas (SMS/Telegram)",
-      "Calculadora de Arbitraje avanzada",
-      "Soporte Premium 24/7",
-    ],
-    isPopular: true,
-  },
-  {
-    name: "Ultimate",
-    price: "€199",
-    tagline: "Máxima velocidad y acceso a arbitrajes en tiempo real y trading.",
-    features: [
-      "Escaneo en 100+ plataformas (incluye Exchanges)",
-      "Arbitrajes Pre-partido y Live",
-      "Arbitrajes con beneficio > 0%",
-      "API de Integración (Beta)",
-      "Asesor Personalizado",
-    ],
-  },
-];
-
 const ARBITRAGE_EXAMPLES: ArbitrageExample[] = [
   { percentage: 2.85, team1: "Lakers", team2: "Celtics" },
   { percentage: 1.9, team1: "Real Madrid", team2: "Barcelona" },
 ];
 
-function ArbitrageListMockup() {
+const FEATURE_ICONS: LucideIcon[] = [Zap, TrendingUp, Shield, Maximize];
+
+
+function ArbitrageListMockup({ title }: { title: string }) {
   return (
     <div className="w-full h-full p-4 md:p-6 bg-[var(--color-card-bg)] rounded-xl shadow-inner border border-[var(--color-border)]">
       <h3 className="text-xl font-semibold mb-4 text-[var(--color-text-accent)] flex items-center">
         <DollarSign className="w-5 h-5 mr-2 text-[var(--color-green-text)]" />
-        Oportunidades de Arbitraje
+        {title}
       </h3>
 
       {ARBITRAGE_EXAMPLES.map((arb) => (
@@ -141,6 +54,8 @@ function ArbitrageListMockup() {
 
 export default function LandingPage({ onStartClick }: LandingPageProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const { language } = useLanguageContext();
+  const landingCopy = useAppTranslations("landing");
 
   useEffect(() => {
     const openModal = () => setShowLoginModal(true);
@@ -149,6 +64,23 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
   }, []);
 
   const year = useMemo(() => new Date().getFullYear(), []);
+  const copy: LandingCopy = landingCopy;
+  const features = copy.features.map((feature, index) => ({
+    ...feature,
+    icon: FEATURE_ICONS[index] ?? FEATURE_ICONS[FEATURE_ICONS.length - 1],
+  }));
+  const plans = copy.pricingPlans;
+  const isUkPricing = language === "en";
+
+  const formatPrice = (amount: number) => {
+    const formatter = new Intl.NumberFormat(isUkPricing ? "en-GB" : "es-ES", {
+      style: "currency",
+      currency: isUkPricing ? "GBP" : "EUR",
+      minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    });
+    return formatter.format(amount);
+  };
 
   return (
     <>
@@ -156,21 +88,21 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
         <section className="pt-28 pb-20 text-center bg-[var(--color-background-primary)]">
           <div className="max-w-7xl mx-auto px-6">
             <h1 className="text-5xl md:text-7xl font-extrabold mb-4 leading-tight text-[var(--color-text-accent)]">
-              Convierte el riesgo en beneficio con{" "}
-              <span className="text-[var(--color-accent-primary)]">SureVisionOne</span>
+              {copy.hero.titlePrefix}
+              <span className="text-[var(--color-accent-primary)]">{copy.hero.highlight}</span>
             </h1>
             <p className="text-xl md:text-2xl mb-10 max-w-3xl mx-auto text-[var(--color-text-secondary)]">
-              El escáner de arbitraje más rápido para apuestas deportivas. Encuentra apuestas seguras y garantiza ganancias sin riesgo.
+              {copy.hero.subtitle}
             </p>
             <button
               onClick={onStartClick}
               className="inline-flex items-center justify-center px-10 py-3.5 text-lg font-bold rounded-full shadow-xl transition duration-300 ease-in-out transform hover:scale-[1.03] bg-[var(--color-accent-primary)] text-white hover:bg-[#0ea5e9]"
             >
-              <Rocket className="w-5 h-5 mr-2" /> Comenzar Gratis
+              <Rocket className="w-5 h-5 mr-2" /> {copy.hero.cta}
             </button>
 
             <div className="mt-20">
-              <ArbitrageListMockup />
+              <ArbitrageListMockup title={copy.arbitrageTitle} />
             </div>
           </div>
         </section>
@@ -178,10 +110,10 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
         <section id="features" className="py-20 bg-[var(--color-background-secondary)] border-t border-[var(--color-border)]">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="text-4xl font-bold text-center mb-6 text-[var(--color-text-accent)]">
-              Características que Garantizan el Éxito
+              {copy.featuresTitle}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {FEATURES.map((feature) => {
+              {features.map((feature) => {
                 const Icon = feature.icon;
                 return (
                   <div
@@ -201,11 +133,11 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
         <section id="pricing" className="py-20 bg-[var(--color-background-primary)] border-t border-[var(--color-border)]">
           <div className="max-w-7xl mx-auto px-6">
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-6 text-[var(--color-text-accent)]">
-              Planes de Suscripción Flexibles
+              {copy.pricingTitle}
             </h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              {PRICING_PLANS.map((plan) => (
+              {plans.map((plan) => (
                 <div
                   key={plan.name}
                   className={`p-8 rounded-2xl border transition-all duration-300 ${
@@ -216,7 +148,9 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
                 >
                   <h3 className="text-2xl font-bold mb-1 text-[var(--color-text-accent)]">{plan.name}</h3>
                   <p className="text-[var(--color-text-secondary)] mb-4">{plan.tagline}</p>
-                  <div className="text-4xl font-extrabold text-[var(--color-text-accent)] mb-1">{plan.price}</div>
+                  <div className="text-4xl font-extrabold text-[var(--color-text-accent)] mb-1">
+                    {formatPrice(isUkPricing ? plan.price.gbp : plan.price.eur)}
+                  </div>
 
                   <button
                     onClick={onStartClick}
@@ -228,11 +162,7 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
                         : "bg-[var(--color-background-tertiary)] text-[var(--color-text-accent)] hover:bg-[var(--color-hover-bg)]"
                     }`}
                   >
-                    {plan.isFree
-                      ? "Empezar Gratis"
-                      : plan.isPopular
-                      ? "Comenzar con Pro"
-                      : "Seleccionar Plan"}
+                    {plan.cta}
                   </button>
 
                   <ul className="mt-8 space-y-3">
@@ -250,7 +180,7 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
         </section>
 
         <footer className="py-8 border-t border-[var(--color-border)] bg-[var(--color-background-secondary)] text-center text-sm text-[var(--color-text-secondary)]">
-          &copy; {year} SureVisionOne. Todos los derechos reservados.
+          &copy; {year} SureVisionOne. {copy.footer}
         </footer>
       </div>
 

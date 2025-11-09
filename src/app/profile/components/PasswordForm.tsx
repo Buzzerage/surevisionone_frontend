@@ -12,6 +12,13 @@ type PasswordFormProps = {
   onChange: (field: keyof PasswordFormValues, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   submitting: boolean;
+  labels: {
+    current: string;
+    next: string;
+    confirm: string;
+    submit: string;
+    submitting: string;
+  };
 };
 
 const PasswordField = ({
@@ -41,25 +48,25 @@ const PasswordField = ({
   </label>
 );
 
-const PasswordForm = ({ onChange, onSubmit, submitting, values }: PasswordFormProps) => (
+const PasswordForm = ({ onChange, onSubmit, submitting, values, labels }: PasswordFormProps) => (
   <form className="space-y-4" onSubmit={onSubmit}>
     <PasswordField
       id="current-password"
-      label="Contraseña actual"
+      label={labels.current}
       autoComplete="current-password"
       value={values.currentPassword}
       onChange={(value) => onChange("currentPassword", value)}
     />
     <PasswordField
       id="new-password"
-      label="Nueva contraseña"
+      label={labels.next}
       autoComplete="new-password"
       value={values.newPassword}
       onChange={(value) => onChange("newPassword", value)}
     />
     <PasswordField
       id="confirm-password"
-      label="Confirmar nueva contraseña"
+      label={labels.confirm}
       autoComplete="new-password"
       value={values.confirmPassword}
       onChange={(value) => onChange("confirmPassword", value)}
@@ -70,7 +77,7 @@ const PasswordForm = ({ onChange, onSubmit, submitting, values }: PasswordFormPr
       disabled={submitting}
     >
       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-      {submitting ? "Actualizando..." : "Actualizar contraseña"}
+      {submitting ? labels.submitting : labels.submit}
     </button>
   </form>
 );
