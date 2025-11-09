@@ -101,14 +101,16 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           return;
         }
 
+        const profileMetadata = {
+          language,
+          betting_region: bettingRegion,
+        } as const;
+
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: {
-              language,
-              betting_region: bettingRegion,
-            },
+            data: profileMetadata,
           },
         });
         if (signUpError) {
@@ -120,10 +122,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         if (createdUserId) {
           const { error: profileError } = await supabase
             .from("profiles")
-            .upsert(
-              { id: createdUserId, language, betting_region: bettingRegion },
-              { onConflict: "id", returning: "minimal" }
-            );
+            .upsert({ id: createdUserId, ...profileMetadata }, { onConflict: "id", returning: "minimal" });
 
           if (profileError && process.env.NODE_ENV !== "production") {
             console.warn("No se pudo guardar la región de apuestas en el perfil", profileError);
