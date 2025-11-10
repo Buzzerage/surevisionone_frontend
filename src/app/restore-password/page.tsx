@@ -66,6 +66,7 @@ export default function RestorePasswordPage() {
       if (!queryEmail) {
         return null;
       }
+    })();
 
       try {
         return decodeURIComponent(queryEmail);
