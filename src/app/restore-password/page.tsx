@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2, Lock } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 import { useAppTranslations } from "@/lib/i18n";
+import type { Session, User } from "@supabase/supabase-js";
 
 export default function RestorePasswordPage() {
   const router = useRouter();
@@ -80,13 +81,11 @@ export default function RestorePasswordPage() {
 
     if (queryToken) {
       recoveryTokens.add(queryToken);
-      codeCandidates.add(queryToken);
     }
 
     const hashToken = hashParams.get("token");
     if (hashToken) {
       recoveryTokens.add(hashToken);
-      codeCandidates.add(hashToken);
     }
 
     const hashTokenHash = hashParams.get("token_hash");
@@ -118,13 +117,15 @@ export default function RestorePasswordPage() {
       codeCandidates.add(queryCode);
     }
 
+    const extractUserId = (data: { session?: Session | null; user?: User | null } | null | undefined) => {
+      return data?.session?.user?.id ?? data?.user?.id ?? null;
+    };
+
     const verify = async () => {
       setError(null);
       setVerificationState("verifying");
 
-      const attempts: Array<() => Promise<string | null>> = [];
-
-      const getCurrentUserId = async () => {
+      const ensureSessionUserId = async () => {
         const {
           data: { session },
           error: sessionError,
@@ -135,11 +136,6 @@ export default function RestorePasswordPage() {
         }
 
         return session?.user?.id ?? null;
-      };
-
-      const ensureSessionUserId = async () => {
-        const userId = await getCurrentUserId();
-        return userId;
       };
 
       const existingUserId = await ensureSessionUserId();
@@ -155,85 +151,82 @@ export default function RestorePasswordPage() {
         return;
       }
 
-      if (type === "recovery") {
-        if (normalizedEmail) {
-          for (const token of recoveryTokens) {
-            attempts.push(async () => {
-              const { data, error } = await supabase.auth.verifyOtp({
-                type: "recovery",
-                email: normalizedEmail,
-                token,
-              });
-
-              if (error) {
-                throw error;
-              }
-
-              const userId = data.session?.user?.id ?? data.user?.id ?? null;
-
-              if (userId) {
-                return userId;
-              }
-
-              return ensureSessionUserId();
-            });
-          }
-        }
-
-        for (const tokenHash of tokenHashes) {
-          attempts.push(async () => {
-            const { data, error } = await supabase.auth.verifyOtp({
-              type: "recovery",
-              token_hash: tokenHash,
-            });
-
-            if (error) {
-              throw error;
-            }
-
-            const userId = data.session?.user?.id ?? data.user?.id ?? null;
-
-            if (userId) {
-              return userId;
-            }
-
-            return ensureSessionUserId();
-          });
-        }
+      if (type !== "recovery") {
+        throw new Error(restoreCopy.invalid);
       }
-
-      for (const code of codeCandidates) {
-        attempts.push(async () => {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (exchangeError) {
-            throw exchangeError;
-          }
-
-          return ensureSessionUserId();
-        });
-      }
-
-      attempts.push(async () => {
-        return ensureSessionUserId();
-      });
 
       let recoveredUserId: string | null = null;
       let lastError: Error | null = null;
 
-      for (const attempt of attempts) {
+      const attemptExchange = async (code: string) => {
         try {
-          const result = await attempt();
-          if (result) {
-            recoveredUserId = result;
-            break;
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            throw error;
           }
+
+          return extractUserId(data) ?? (await ensureSessionUserId());
         } catch (attemptError) {
           lastError =
             attemptError instanceof Error
               ? attemptError
               : new Error(typeof attemptError === "string" ? attemptError : restoreCopy.invalid);
+          return null;
         }
+      };
+
+      const attemptVerify = async (options: { token?: string; token_hash?: string; email?: string | null }) => {
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            type: "recovery",
+            ...options,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          return extractUserId(data) ?? (await ensureSessionUserId());
+        } catch (attemptError) {
+          lastError =
+            attemptError instanceof Error
+              ? attemptError
+              : new Error(typeof attemptError === "string" ? attemptError : restoreCopy.invalid);
+          return null;
+        }
+      };
+
+      for (const code of codeCandidates) {
+        const userId = await attemptExchange(code);
+        if (userId) {
+          recoveredUserId = userId;
+          break;
+        }
+      }
+
+      if (!recoveredUserId && tokenHashes.size > 0) {
+        for (const tokenHash of tokenHashes) {
+          const userId = await attemptVerify({ token_hash: tokenHash });
+          if (userId) {
+            recoveredUserId = userId;
+            break;
+          }
+        }
+      }
+
+      if (!recoveredUserId && normalizedEmail && recoveryTokens.size > 0) {
+        for (const token of recoveryTokens) {
+          const userId = await attemptVerify({ token, email: normalizedEmail });
+          if (userId) {
+            recoveredUserId = userId;
+            break;
+          }
+        }
+      }
+
+      if (!recoveredUserId) {
+        recoveredUserId = await ensureSessionUserId();
       }
 
       if (!recoveredUserId) {
