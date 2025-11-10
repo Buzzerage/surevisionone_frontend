@@ -52,7 +52,11 @@ export default function RestorePasswordPage() {
       setError(null);
       setVerificationState("verifying");
       try {
-        await supabase.auth.exchangeCodeForSession(code);
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (exchangeError) {
+          throw exchangeError;
+        }
 
         const {
           data: { user },

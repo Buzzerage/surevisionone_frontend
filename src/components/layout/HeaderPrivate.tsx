@@ -7,10 +7,10 @@ import type { Session } from "@supabase/supabase-js";
 
 import Logo from "@/components/common/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import LanguageMenu from "@/components/ui/LanguageMenu";
 import { supabase } from "@/lib/supabase/client";
 import { useThemeContext } from "@/providers/ThemeProvider";
 import { useAppTranslations } from "@/lib/i18n";
+import { clearSupabaseSession } from "@/lib/supabase/clearSession";
 
 type HeaderPrivateProps = {
   session: Session | null;
@@ -29,6 +29,13 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
     try {
       await supabase.auth.signOut();
     } finally {
+      try {
+        await clearSupabaseSession();
+      } catch (sessionError) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Unable to clear local Supabase session", sessionError);
+        }
+      }
       document.cookie = "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       router.push("/");
     }
