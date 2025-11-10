@@ -25,24 +25,76 @@ export default function RestorePasswordPage() {
   useEffect(() => {
     let active = true;
 
-    const extractToken = () => {
-      // Token may arrive in query param: ?token=...
-      const urlToken = searchParams.get("token");
-      if (urlToken) return urlToken;
+    const hashParams =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.hash.replace(/^#/, ""))
+        : new URLSearchParams();
 
-      // Or via hash (#access_token=...)
-      if (typeof window !== "undefined") {
-        const hashParams = new URLSearchParams(window.location.hash.replace("#", ""));
-        const hashToken = hashParams.get("access_token");
-        if (hashToken) return hashToken;
+    const type = searchParams.get("type");
+    const queryToken = searchParams.get("token");
+    const queryTokenHash = searchParams.get("token_hash");
+    const queryCode = searchParams.get("code");
+    const queryEmail = searchParams.get("email");
+
+    const normalizedEmail = (() => {
+      if (!queryEmail) {
+        return null;
       }
 
-      return null;
-    };
+      try {
+        return decodeURIComponent(queryEmail);
+      } catch {
+        return queryEmail;
+      }
+    })();
 
-    const code = extractToken();
+    const recoveryTokens = new Set<string>();
+    const tokenHashes = new Set<string>();
+    const codeCandidates = new Set<string>();
 
-    if (!code) {
+    if (queryToken) {
+      recoveryTokens.add(queryToken);
+    }
+
+    const hashToken = hashParams.get("token");
+    if (hashToken) {
+      recoveryTokens.add(hashToken);
+    }
+
+    const hashTokenHash = hashParams.get("token_hash");
+    if (hashTokenHash) {
+      tokenHashes.add(hashTokenHash);
+    }
+
+    if (queryTokenHash) {
+      tokenHashes.add(queryTokenHash);
+    }
+
+    for (const token of recoveryTokens) {
+      if (token.startsWith("pkce_")) {
+        tokenHashes.add(token);
+      }
+    }
+
+    const hashCode = hashParams.get("code");
+    if (hashCode) {
+      codeCandidates.add(hashCode);
+    }
+
+    const hashAccessToken = hashParams.get("access_token");
+    if (hashAccessToken) {
+      codeCandidates.add(hashAccessToken);
+    }
+
+    if (queryCode) {
+      codeCandidates.add(queryCode);
+    }
+
+    if (queryToken && type !== "recovery") {
+      codeCandidates.add(queryToken);
+    }
+
+    if (codeCandidates.size === 0 && tokenHashes.size === 0 && recoveryTokens.size === 0) {
       setVerificationState("ready");
       setError(restoreCopy.invalid);
       return;
@@ -51,13 +103,68 @@ export default function RestorePasswordPage() {
     const verify = async () => {
       setError(null);
       setVerificationState("verifying");
-      try {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-        if (exchangeError) {
-          throw exchangeError;
+      const attempts: Array<() => Promise<string | null>> = [];
+
+      if (type === "recovery") {
+        if (normalizedEmail) {
+          for (const token of recoveryTokens) {
+            attempts.push(async () => {
+              const { data, error } = await supabase.auth.verifyOtp({
+                type: "recovery",
+                email: normalizedEmail,
+                token,
+              });
+
+              if (error) {
+                throw error;
+              }
+
+              const userId = data.session?.user?.id ?? data.user?.id ?? null;
+              return userId ?? null;
+            });
+          }
         }
 
+        for (const tokenHash of tokenHashes) {
+          attempts.push(async () => {
+            const { data, error } = await supabase.auth.verifyOtp({
+              type: "recovery",
+              token_hash: tokenHash,
+            });
+
+            if (error) {
+              throw error;
+            }
+
+            const userId = data.session?.user?.id ?? data.user?.id ?? null;
+            return userId ?? null;
+          });
+        }
+      }
+
+      for (const code of codeCandidates) {
+        attempts.push(async () => {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) {
+            throw exchangeError;
+          }
+
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError) {
+            throw userError;
+          }
+
+          return user?.id ?? null;
+        });
+      }
+
+      attempts.push(async () => {
         const {
           data: { user },
           error: userError,
@@ -67,28 +174,73 @@ export default function RestorePasswordPage() {
           throw userError;
         }
 
-        if (!user) {
-          throw new Error(restoreCopy.unauthorized);
+        return user?.id ?? null;
+      });
+
+      let recoveredUserId: string | null = null;
+      let lastError: Error | null = null;
+
+      for (const attempt of attempts) {
+        try {
+          const result = await attempt();
+          if (result) {
+            recoveredUserId = result;
+            break;
+          }
+        } catch (attemptError) {
+          lastError =
+            attemptError instanceof Error
+              ? attemptError
+              : new Error(typeof attemptError === "string" ? attemptError : restoreCopy.invalid);
+        }
+      }
+
+      if (!recoveredUserId) {
+        throw lastError ?? new Error(restoreCopy.invalid);
+      }
+
+      if (!active) {
+        return;
+      }
+
+      setRecoveryUserId(recoveredUserId);
+      setVerificationState("ready");
+
+      if (typeof window !== "undefined") {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.hash = "";
+        const paramsToStrip = ["token", "token_hash", "code", "type", "email"];
+        let modified = false;
+
+        for (const param of paramsToStrip) {
+          if (currentUrl.searchParams.has(param)) {
+            currentUrl.searchParams.delete(param);
+            modified = true;
+          }
         }
 
-        setRecoveryUserId(user.id);
-        if (!active) return;
-        setVerificationState("ready");
-      } catch (verificationError) {
-        if (!active) return;
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("No se pudo verificar el enlace de recuperación", verificationError);
+        if (modified || window.location.hash) {
+          window.history.replaceState(null, "", currentUrl.toString());
         }
-        const message =
-          verificationError instanceof Error && verificationError.message === restoreCopy.unauthorized
-            ? restoreCopy.unauthorized
-            : restoreCopy.invalid;
-        setError(message);
-        setVerificationState("ready");
       }
     };
 
-    void verify();
+    void verify().catch((verificationError) => {
+      if (!active) {
+        return;
+      }
+
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("No se pudo verificar el enlace de recuperación", verificationError);
+      }
+
+      const message =
+        verificationError instanceof Error && verificationError.message === restoreCopy.unauthorized
+          ? restoreCopy.unauthorized
+          : restoreCopy.invalid;
+      setError(message);
+      setVerificationState("ready");
+    });
 
     return () => {
       active = false;

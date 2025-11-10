@@ -11,7 +11,7 @@ const createSupabaseBrowserClient = () =>
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: "sb-session",
-      flowType: "implicit",
+      flowType: "pkce",
     },
   });
 
