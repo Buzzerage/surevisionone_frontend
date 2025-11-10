@@ -1,28 +1,30 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Asegurar que solo se ejecuta en el cliente
-let supabase: ReturnType<typeof createClient>;
+const createSupabaseBrowserClient = () =>
+  createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: "sb-session",
+      flowType: "pkce",
+    },
+  });
 
-if (typeof window !== "undefined") {
-  if (!(window as any).__supabase_client__) {
-    (window as any).__supabase_client__ = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: "sb-session",
-        flowType: "implicit", // <-- CAMBIADO, ESTO ES CLAVE
-      },
-    });
-  }
+const createSupabaseServerClient = () =>
+  createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+    },
+  });
 
-  supabase = (window as any).__supabase_client__;
-} else {
-  // En el servidor devolvemos un cliente "vacío"
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-}
+let browserClient: SupabaseClient | null = null;
 
-export { supabase };
+export const supabase =
+  typeof window === "undefined"
+    ? createSupabaseServerClient()
+    : (browserClient ??= createSupabaseBrowserClient());
