@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
@@ -11,6 +11,7 @@ import { useAppTranslations } from "@/lib/i18n";
 export default function RestorePasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchParamsKey = searchParams.toString();
   const copy = useAppTranslations("auth");
   const restoreCopy = copy.restore;
 
@@ -22,24 +23,49 @@ export default function RestorePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [recoveryUserId, setRecoveryUserId] = useState<string | null>(null);
 
+  const scrubAuthParams = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const currentUrl = new URL(window.location.href);
+    currentUrl.hash = "";
+    const paramsToStrip = ["token", "token_hash", "code", "type", "email"];
+    let modified = false;
+
+    for (const param of paramsToStrip) {
+      if (currentUrl.searchParams.has(param)) {
+        currentUrl.searchParams.delete(param);
+        modified = true;
+      }
+    }
+
+    if (modified || window.location.hash) {
+      window.history.replaceState(null, "", currentUrl.toString());
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
+
+    const queryParams = new URLSearchParams(searchParamsKey);
 
     const hashParams =
       typeof window !== "undefined"
         ? new URLSearchParams(window.location.hash.replace(/^#/, ""))
         : new URLSearchParams();
 
-    const type = searchParams.get("type");
-    const queryToken = searchParams.get("token");
-    const queryTokenHash = searchParams.get("token_hash");
-    const queryCode = searchParams.get("code");
-    const queryEmail = searchParams.get("email");
+    const type = queryParams.get("type");
+    const queryToken = queryParams.get("token");
+    const queryTokenHash = queryParams.get("token_hash");
+    const queryCode = queryParams.get("code");
+    const queryEmail = queryParams.get("email");
 
     const normalizedEmail = (() => {
       if (!queryEmail) {
         return null;
       }
+    })();
 
       try {
         return decodeURIComponent(queryEmail);
@@ -54,11 +80,13 @@ export default function RestorePasswordPage() {
 
     if (queryToken) {
       recoveryTokens.add(queryToken);
+      codeCandidates.add(queryToken);
     }
 
     const hashToken = hashParams.get("token");
     if (hashToken) {
       recoveryTokens.add(hashToken);
+      codeCandidates.add(hashToken);
     }
 
     const hashTokenHash = hashParams.get("token_hash");
@@ -90,21 +118,42 @@ export default function RestorePasswordPage() {
       codeCandidates.add(queryCode);
     }
 
-    if (queryToken && type !== "recovery") {
-      codeCandidates.add(queryToken);
-    }
-
-    if (codeCandidates.size === 0 && tokenHashes.size === 0 && recoveryTokens.size === 0) {
-      setVerificationState("ready");
-      setError(restoreCopy.invalid);
-      return;
-    }
-
     const verify = async () => {
       setError(null);
       setVerificationState("verifying");
 
       const attempts: Array<() => Promise<string | null>> = [];
+
+      const getCurrentUserId = async () => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        return session?.user?.id ?? null;
+      };
+
+      const ensureSessionUserId = async () => {
+        const userId = await getCurrentUserId();
+        return userId;
+      };
+
+      const existingUserId = await ensureSessionUserId();
+
+      if (!active) {
+        return;
+      }
+
+      if (existingUserId) {
+        setRecoveryUserId(existingUserId);
+        setVerificationState("ready");
+        scrubAuthParams();
+        return;
+      }
 
       if (type === "recovery") {
         if (normalizedEmail) {
@@ -121,7 +170,12 @@ export default function RestorePasswordPage() {
               }
 
               const userId = data.session?.user?.id ?? data.user?.id ?? null;
-              return userId ?? null;
+
+              if (userId) {
+                return userId;
+              }
+
+              return ensureSessionUserId();
             });
           }
         }
@@ -138,7 +192,12 @@ export default function RestorePasswordPage() {
             }
 
             const userId = data.session?.user?.id ?? data.user?.id ?? null;
-            return userId ?? null;
+
+            if (userId) {
+              return userId;
+            }
+
+            return ensureSessionUserId();
           });
         }
       }
@@ -151,30 +210,12 @@ export default function RestorePasswordPage() {
             throw exchangeError;
           }
 
-          const {
-            data: { user },
-            error: userError,
-          } = await supabase.auth.getUser();
-
-          if (userError) {
-            throw userError;
-          }
-
-          return user?.id ?? null;
+          return ensureSessionUserId();
         });
       }
 
       attempts.push(async () => {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) {
-          throw userError;
-        }
-
-        return user?.id ?? null;
+        return ensureSessionUserId();
       });
 
       let recoveredUserId: string | null = null;
@@ -205,24 +246,7 @@ export default function RestorePasswordPage() {
 
       setRecoveryUserId(recoveredUserId);
       setVerificationState("ready");
-
-      if (typeof window !== "undefined") {
-        const currentUrl = new URL(window.location.href);
-        currentUrl.hash = "";
-        const paramsToStrip = ["token", "token_hash", "code", "type", "email"];
-        let modified = false;
-
-        for (const param of paramsToStrip) {
-          if (currentUrl.searchParams.has(param)) {
-            currentUrl.searchParams.delete(param);
-            modified = true;
-          }
-        }
-
-        if (modified || window.location.hash) {
-          window.history.replaceState(null, "", currentUrl.toString());
-        }
-      }
+      scrubAuthParams();
     };
 
     void verify().catch((verificationError) => {
@@ -245,7 +269,7 @@ export default function RestorePasswordPage() {
     return () => {
       active = false;
     };
-  }, [restoreCopy.invalid, restoreCopy.unauthorized, searchParams]);
+  }, [restoreCopy.invalid, restoreCopy.unauthorized, scrubAuthParams, searchParamsKey]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -288,8 +312,11 @@ export default function RestorePasswordPage() {
       }
 
       await supabase.auth.signOut({ scope: "global" });
-      localStorage.removeItem("sb-session");
-      sessionStorage.clear();
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("sb-session");
+        sessionStorage.clear();
+      }
 
       setSuccess(restoreCopy.success);
 
