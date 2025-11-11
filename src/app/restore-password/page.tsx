@@ -1,278 +1,155 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 import { useAppTranslations } from "@/lib/i18n";
-import type { Session, User } from "@supabase/supabase-js";
+
+// --- Util: timeout para promesas (evita "cargas infinitas")
+function withTimeout<T>(p: Promise<T>, ms = 10000, label = "operation"): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    p.then(v => { clearTimeout(t); resolve(v); })
+     .catch(e => { clearTimeout(t); reject(e); });
+  });
+}
+
+// --- Util: limpiar parámetros de auth de la URL
+function scrubAuthFromUrl() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.hash = "";
+  const toDelete = ["token","token_hash","code","type","email","error","error_code","error_description"];
+  let modified = false;
+  for (const k of toDelete) {
+    if (url.searchParams.has(k)) { url.searchParams.delete(k); modified = true; }
+  }
+  if (modified || window.location.hash) {
+    window.history.replaceState({}, "", url.toString());
+  }
+}
 
 export default function RestorePasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const searchParamsKey = searchParams.toString();
   const copy = useAppTranslations("auth");
   const restoreCopy = copy.restore;
 
-  const [verificationState, setVerificationState] = useState<"verifying" | "ready">("verifying");
+  const [phase, setPhase] = useState<"verifying" | "ready">("verifying");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [recoveryUserId, setRecoveryUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const scrubAuthParams = useCallback(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const currentUrl = new URL(window.location.href);
-    currentUrl.hash = "";
-    const paramsToStrip = ["token", "token_hash", "code", "type", "email"];
-    let modified = false;
-
-    for (const param of paramsToStrip) {
-      if (currentUrl.searchParams.has(param)) {
-        currentUrl.searchParams.delete(param);
-        modified = true;
-      }
-    }
-
-    if (modified || window.location.hash) {
-      window.history.replaceState(null, "", currentUrl.toString());
-    }
-  }, []);
+  // Congelamos una key estable para deps del effect
+  const searchParamsKey = useMemo(() => searchParams.toString(), [searchParams]);
 
   useEffect(() => {
     let active = true;
 
-    const queryParams = new URLSearchParams(searchParamsKey);
-
-    const hashParams =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.hash.replace(/^#/, ""))
-        : new URLSearchParams();
-
-    const type = queryParams.get("type");
-    const queryToken = queryParams.get("token");
-    const queryTokenHash = queryParams.get("token_hash");
-    const queryCode = queryParams.get("code");
-    const queryEmail = queryParams.get("email");
-
-    const normalizedEmail = (() => {
-      if (!queryEmail) {
-        return null;
-      }
-    })();
-
-      try {
-        return decodeURIComponent(queryEmail);
-      } catch {
-        return queryEmail;
-      }
-    })();
-
-    const recoveryTokens = new Set<string>();
-    const tokenHashes = new Set<string>();
-    const codeCandidates = new Set<string>();
-
-    if (queryToken) {
-      recoveryTokens.add(queryToken);
-    }
-
-    const hashToken = hashParams.get("token");
-    if (hashToken) {
-      recoveryTokens.add(hashToken);
-    }
-
-    const hashTokenHash = hashParams.get("token_hash");
-    if (hashTokenHash) {
-      tokenHashes.add(hashTokenHash);
-    }
-
-    if (queryTokenHash) {
-      tokenHashes.add(queryTokenHash);
-    }
-
-    for (const token of recoveryTokens) {
-      if (token.startsWith("pkce_")) {
-        tokenHashes.add(token);
-      }
-    }
-
-    const hashCode = hashParams.get("code");
-    if (hashCode) {
-      codeCandidates.add(hashCode);
-    }
-
-    const hashAccessToken = hashParams.get("access_token");
-    if (hashAccessToken) {
-      codeCandidates.add(hashAccessToken);
-    }
-
-    if (queryCode) {
-      codeCandidates.add(queryCode);
-    }
-
-    const extractUserId = (data: { session?: Session | null; user?: User | null } | null | undefined) => {
-      return data?.session?.user?.id ?? data?.user?.id ?? null;
-    };
-
-    const verify = async () => {
+    async function verify() {
       setError(null);
-      setVerificationState("verifying");
+      setPhase("verifying");
 
-      const ensureSessionUserId = async () => {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          throw sessionError;
+      // 1) Si ya hay sesión, damos paso directamente
+      try {
+        const { data: { session } } = await withTimeout(supabase.auth.getSession(), 7000, "getSession");
+        if (!active) return;
+        if (session?.user?.id) {
+          setUserId(session.user.id);
+          setPhase("ready");
+          scrubAuthFromUrl();
+          return;
         }
-
-        return session?.user?.id ?? null;
-      };
-
-      const existingUserId = await ensureSessionUserId();
-
-      if (!active) {
-        return;
+      } catch (e) {
+        // seguimos intentando otras rutas
       }
 
-      if (existingUserId) {
-        setRecoveryUserId(existingUserId);
-        setVerificationState("ready");
-        scrubAuthParams();
-        return;
-      }
+      // 2) Leemos posibles credenciales en URL
+      const qs = new URLSearchParams(searchParamsKey);
+      const rawCode = qs.get("code") || (typeof window !== "undefined" ? new URLSearchParams(window.location.hash.replace(/^#/, "")).get("code") : null);
+      const token = qs.get("token");
+      const email = qs.get("email");
 
-      if (type !== "recovery") {
-        throw new Error(restoreCopy.invalid);
-      }
+      let gotUserId: string | null = null;
+      let lastErr: Error | null = null;
 
-      let recoveredUserId: string | null = null;
-      let lastError: Error | null = null;
-
-      const attemptExchange = async (code: string) => {
+      // 2a) Intentar exchange por code (cuando Supabase te pone ?code= o #code=)
+      if (rawCode) {
         try {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (error) {
-            throw error;
-          }
-
-          return extractUserId(data) ?? (await ensureSessionUserId());
-        } catch (attemptError) {
-          lastError =
-            attemptError instanceof Error
-              ? attemptError
-              : new Error(typeof attemptError === "string" ? attemptError : restoreCopy.invalid);
-          return null;
+          const { data, error: exErr } = await withTimeout(supabase.auth.exchangeCodeForSession(rawCode), 10000, "exchangeCodeForSession");
+          if (!active) return;
+          if (exErr) throw exErr;
+          gotUserId = data.session?.user?.id ?? data.user?.id ?? null;
+        } catch (e: any) {
+          lastErr = e instanceof Error ? e : new Error(String(e));
         }
-      };
+      }
 
-      const attemptVerify = async (options: { token?: string; token_hash?: string; email?: string | null }) => {
+      // 2b) Intentar verifyOtp con token + email (cuando la plantilla manda estos)
+      if (!gotUserId && token && email) {
         try {
-          const { data, error } = await supabase.auth.verifyOtp({
-            type: "recovery",
-            ...options,
-          });
-
-          if (error) {
-            throw error;
-          }
-
-          return extractUserId(data) ?? (await ensureSessionUserId());
-        } catch (attemptError) {
-          lastError =
-            attemptError instanceof Error
-              ? attemptError
-              : new Error(typeof attemptError === "string" ? attemptError : restoreCopy.invalid);
-          return null;
-        }
-      };
-
-      for (const code of codeCandidates) {
-        const userId = await attemptExchange(code);
-        if (userId) {
-          recoveredUserId = userId;
-          break;
+          const { data, error: vErr } = await withTimeout(
+            supabase.auth.verifyOtp({ type: "recovery", token, email }),
+            10000,
+            "verifyOtp(recovery)"
+          );
+          if (!active) return;
+          if (vErr) throw vErr;
+          gotUserId = data.session?.user?.id ?? data.user?.id ?? null;
+        } catch (e: any) {
+          lastErr = e instanceof Error ? e : new Error(String(e));
         }
       }
 
-      if (!recoveredUserId && tokenHashes.size > 0) {
-        for (const tokenHash of tokenHashes) {
-          const userId = await attemptVerify({ token_hash: tokenHash });
-          if (userId) {
-            recoveredUserId = userId;
-            break;
-          }
+      // 2c) Último intento: quizá ya hay sesión tras lo anterior
+      if (!gotUserId) {
+        try {
+          const { data: { session } } = await withTimeout(supabase.auth.getSession(), 7000, "getSession-final");
+          if (!active) return;
+          gotUserId = session?.user?.id ?? null;
+        } catch (e) {
+          // ignoramos
         }
       }
 
-      if (!recoveredUserId && normalizedEmail && recoveryTokens.size > 0) {
-        for (const token of recoveryTokens) {
-          const userId = await attemptVerify({ token, email: normalizedEmail });
-          if (userId) {
-            recoveredUserId = userId;
-            break;
-          }
-        }
-      }
+      if (!active) return;
 
-      if (!recoveredUserId) {
-        recoveredUserId = await ensureSessionUserId();
-      }
-
-      if (!recoveredUserId) {
-        throw lastError ?? new Error(restoreCopy.invalid);
-      }
-
-      if (!active) {
+      if (gotUserId) {
+        setUserId(gotUserId);
+        setPhase("ready");
+        scrubAuthFromUrl();
         return;
       }
 
-      setRecoveryUserId(recoveredUserId);
-      setVerificationState("ready");
-      scrubAuthParams();
-    };
+      // Si llega aquí, no se pudo validar
+      const qsError = qs.get("error_description");
+      setError(qsError ?? restoreCopy.invalid);
+      setPhase("ready");
+    }
 
-    void verify().catch((verificationError) => {
-      if (!active) {
-        return;
-      }
-
+    verify().catch((e) => {
+      if (!active) return;
       if (process.env.NODE_ENV !== "production") {
-        console.warn("No se pudo verificar el enlace de recuperación", verificationError);
+        console.warn("Verification failed:", e);
       }
-
-      const message =
-        verificationError instanceof Error && verificationError.message === restoreCopy.unauthorized
-          ? restoreCopy.unauthorized
-          : restoreCopy.invalid;
-      setError(message);
-      setVerificationState("ready");
+      setError(restoreCopy.invalid);
+      setPhase("ready");
     });
 
-    return () => {
-      active = false;
-    };
-  }, [restoreCopy.invalid, restoreCopy.unauthorized, scrubAuthParams, searchParamsKey]);
+    return () => { active = false; };
+  }, [searchParamsKey, restoreCopy.invalid]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError(null);
 
-    if (verificationState !== "ready" || success) {
-      return;
-    }
-
-    if (!recoveryUserId) {
+    if (!userId) {
       setError(restoreCopy.unauthorized);
       return;
     }
@@ -283,7 +160,10 @@ export default function RestorePasswordPage() {
     }
 
     const meetsRequirements =
-      password.length >= 12 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
+      password.length >= 12 &&
+      /[a-z]/.test(password) &&
+      /[A-Z]/.test(password) &&
+      /\d/.test(password);
 
     if (!meetsRequirements) {
       setError(restoreCopy.requirements);
@@ -292,42 +172,28 @@ export default function RestorePasswordPage() {
 
     setLoading(true);
 
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session?.user) {
-        throw new Error(restoreCopy.unauthorized);
-      }
+    // ✅ IMPORTANTE: evitar refresh de sesión
+    const { error: updateError } = await supabase.auth.updateUser(
+      { password },
+      { skipSessionRefresh: true } // 👈 ESTA ES LA CLAVE
+    );
 
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-      
-      if (updateError) {
-        throw updateError;
-      }
-
-      await supabase.auth.signOut({ scope: "global" });
-
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("sb-session");
-        sessionStorage.clear();
-      }
-
-      setSuccess(restoreCopy.success);
-
-      setTimeout(() => {
-        router.replace("/");
-      }, 1500);
-    } catch (submitError) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("No se pudo actualizar la contraseña", submitError);
-      }
-      const message =
-        submitError instanceof Error && submitError.message
-          ? submitError.message
-          : restoreCopy.genericError;
-      setError(message);
-    } finally {
+    if (updateError) {
+      setError(updateError.message);
       setLoading(false);
+      return;
     }
+
+    // ✅ Mostrar mensaje de éxito antes de cerrar sesión
+    setSuccess(restoreCopy.success);
+    setLoading(false);
+
+    setTimeout(async () => {
+      await supabase.auth.signOut();
+      localStorage.clear();
+      sessionStorage.clear();
+      router.replace("/");
+    }, 1200);
   };
 
   return (
@@ -337,7 +203,7 @@ export default function RestorePasswordPage() {
           <h1 className="text-2xl font-bold text-[var(--color-text-accent)]">{restoreCopy.title}</h1>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{restoreCopy.subtitle}</p>
 
-          {verificationState === "verifying" ? (
+          {phase === "verifying" ? (
             <div className="mt-8 flex flex-col items-center gap-3 text-sm text-[var(--color-text-secondary)]">
               <Loader2 className="h-8 w-8 animate-spin text-[var(--color-accent-primary)]" />
               <span>{restoreCopy.verifying}</span>
@@ -348,7 +214,7 @@ export default function RestorePasswordPage() {
               <p className="text-sm text-[var(--color-text-accent)]">{success}</p>
               <button
                 type="button"
-                onClick={() => router.push("/panel")}
+                onClick={() => router.push("/")}
                 className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent-primary)] px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
               >
                 {restoreCopy.goToPanel}
@@ -367,7 +233,7 @@ export default function RestorePasswordPage() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder={restoreCopy.newPassword}
                   className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-10 py-3 text-sm text-[var(--color-text-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
                   required
@@ -379,7 +245,7 @@ export default function RestorePasswordPage() {
                 <input
                   type="password"
                   value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder={restoreCopy.confirmPassword}
                   className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background-secondary)] px-10 py-3 text-sm text-[var(--color-text-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
                   required
@@ -390,7 +256,7 @@ export default function RestorePasswordPage() {
 
               <button
                 type="submit"
-                disabled={loading || !recoveryUserId}
+                disabled={loading || !userId}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-accent-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
