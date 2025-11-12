@@ -1,8 +1,21 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+const RECOVERY_COOKIE_NAME = "sv-recovery";
+
 export async function middleware(req: NextRequest) {
+  const isRestorePage = req.nextUrl.pathname.startsWith("/restore-password");
+  const inRecoveryFlow = req.cookies.get(RECOVERY_COOKIE_NAME)?.value === "1";
+
+  if (inRecoveryFlow && !isRestorePage) {
+    const redirectUrl = new URL("/restore-password", req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const res = NextResponse.next();
 
   // ✅ No bloquear restore-password
-  if (req.nextUrl.pathname.startsWith("/restore-password")) {
+  if (isRestorePage) {
     return res;
   }
 
