@@ -1,12 +1,15 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 import { useAppTranslations } from "@/lib/i18n";
+
+const RECOVERY_COOKIE_NAME = "sv-recovery";
+const RECOVERY_COOKIE_MAX_AGE = 15 * 60; // 15 minutos
 
 // --- Util: timeout para promesas (evita "cargas infinitas")
 function withTimeout<T>(p: Promise<T>, ms = 10000, label = "operation"): Promise<T> {
@@ -46,6 +49,16 @@ export default function RestorePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
+  const setRecoveryCookie = useCallback(() => {
+    if (typeof document === "undefined") return;
+    document.cookie = `${RECOVERY_COOKIE_NAME}=1; Max-Age=${RECOVERY_COOKIE_MAX_AGE}; Path=/; SameSite=Lax`;
+  }, []);
+
+  const clearRecoveryCookie = useCallback(() => {
+    if (typeof document === "undefined") return;
+    document.cookie = `${RECOVERY_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
+  }, []);
+
   // Congelamos una key estable para deps del effect
   const searchParamsKey = useMemo(() => searchParams.toString(), [searchParams]);
 
@@ -66,8 +79,10 @@ export default function RestorePasswordPage() {
           scrubAuthFromUrl();
           return;
         }
-      } catch (e) {
-        // seguimos intentando otras rutas
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("No session available before verifying password recovery", error);
+        }
       }
 
       // 2) Leemos posibles credenciales en URL
@@ -77,8 +92,6 @@ export default function RestorePasswordPage() {
       const email = qs.get("email");
 
       let gotUserId: string | null = null;
-      let lastErr: Error | null = null;
-
       // 2a) Intentar exchange por code (cuando Supabase te pone ?code= o #code=)
       if (rawCode) {
         try {
@@ -86,8 +99,10 @@ export default function RestorePasswordPage() {
           if (!active) return;
           if (exErr) throw exErr;
           gotUserId = data.session?.user?.id ?? data.user?.id ?? null;
-        } catch (e: any) {
-          lastErr = e instanceof Error ? e : new Error(String(e));
+        } catch (error: unknown) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("Recovery code exchange failed", error);
+          }
         }
       }
 
@@ -102,8 +117,10 @@ export default function RestorePasswordPage() {
           if (!active) return;
           if (vErr) throw vErr;
           gotUserId = data.session?.user?.id ?? data.user?.id ?? null;
-        } catch (e: any) {
-          lastErr = e instanceof Error ? e : new Error(String(e));
+        } catch (error: unknown) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("OTP verification for password recovery failed", error);
+          }
         }
       }
 
@@ -113,8 +130,10 @@ export default function RestorePasswordPage() {
           const { data: { session } } = await withTimeout(supabase.auth.getSession(), 7000, "getSession-final");
           if (!active) return;
           gotUserId = session?.user?.id ?? null;
-        } catch (e) {
-          // ignoramos
+        } catch (error) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("Unable to obtain a session after recovery attempts", error);
+          }
         }
       }
 
@@ -124,6 +143,7 @@ export default function RestorePasswordPage() {
         setUserId(gotUserId);
         setPhase("ready");
         scrubAuthFromUrl();
+        setRecoveryCookie();
         return;
       }
 
@@ -143,7 +163,13 @@ export default function RestorePasswordPage() {
     });
 
     return () => { active = false; };
-  }, [searchParamsKey, restoreCopy.invalid]);
+  }, [searchParamsKey, restoreCopy.invalid, setRecoveryCookie]);
+
+  useEffect(() => {
+    if (success) {
+      clearRecoveryCookie();
+    }
+  }, [clearRecoveryCookie, success]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -172,28 +198,25 @@ export default function RestorePasswordPage() {
 
     setLoading(true);
 
-    // ✅ IMPORTANTE: evitar refresh de sesión
-    const { error: updateError } = await supabase.auth.updateUser(
-      { password },
-      { skipSessionRefresh: true } // 👈 ESTA ES LA CLAVE
-    );
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
 
-    if (updateError) {
-      setError(updateError.message);
+      if (updateError) {
+        throw updateError;
+      }
+
+      setSuccess(restoreCopy.success);
+      clearRecoveryCookie();
+
+      setTimeout(() => {
+        router.replace("/panel");
+      }, 1200);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : restoreCopy.genericError;
+      setError(message || restoreCopy.genericError);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // ✅ Mostrar mensaje de éxito antes de cerrar sesión
-    setSuccess(restoreCopy.success);
-    setLoading(false);
-
-    setTimeout(async () => {
-      await supabase.auth.signOut();
-      localStorage.clear();
-      sessionStorage.clear();
-      router.replace("/");
-    }, 1200);
   };
 
   return (
@@ -214,7 +237,7 @@ export default function RestorePasswordPage() {
               <p className="text-sm text-[var(--color-text-accent)]">{success}</p>
               <button
                 type="button"
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/panel")}
                 className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent-primary)] px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
               >
                 {restoreCopy.goToPanel}
