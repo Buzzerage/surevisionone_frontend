@@ -1,6 +1,9 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+"use client";
 
-const supabase = createSupabaseServerClient(req, res);
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+
 type SupabaseAuthInternals = {
   _removeSession?: () => Promise<void>;
   storageKey?: string;
@@ -11,6 +14,7 @@ type SupabaseAuthInternals = {
 
 const runSafe = async (operation: (() => Promise<void> | void) | undefined) => {
   if (!operation) return;
+
   try {
     await operation();
   } catch (error) {
@@ -20,8 +24,9 @@ const runSafe = async (operation: (() => Promise<void> | void) | undefined) => {
   }
 };
 
-export const clearSupabaseSession = async () => {
-  const auth = supabase.auth as unknown as SupabaseAuthInternals;
+export const clearSupabaseSession = async (client?: SupabaseClient) => {
+  const resolvedClient = client ?? getSupabaseBrowserClient();
+  const auth = resolvedClient.auth as unknown as SupabaseAuthInternals;
 
   if (auth?._removeSession) {
     await auth._removeSession();

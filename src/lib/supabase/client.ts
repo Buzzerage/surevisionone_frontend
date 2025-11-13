@@ -1,4 +1,3 @@
 "use client";
 
-import { browserClient } from "./browser-client";
-export const supabase = browserClient();
+export { getSupabaseBrowserClient, supabase } from "./browser-client";

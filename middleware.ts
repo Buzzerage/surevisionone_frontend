@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { createSupabaseMiddlewareClient } from "@/lib/supabase/server-client";
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
-  const supabase = createSupabaseServerClient(req, res);
+  const supabase = createSupabaseMiddlewareClient(req, res);
 
   const { data } = await supabase.auth.getUser();
+
+  const recoveryCookie = req.cookies.get("sv-recovery-session");
+  if (recoveryCookie?.value === "1") {
+    return NextResponse.redirect(new URL("/restore-password", req.url));
+  }
 
   if (!data?.user) {
     return NextResponse.redirect(new URL("/", req.url));
@@ -16,5 +21,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/panel/:path*"],
+  matcher: ["/panel/:path*", "/profile/:path*"],
 };
