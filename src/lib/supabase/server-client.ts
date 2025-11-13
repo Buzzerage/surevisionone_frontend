@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cache } from "react";
 
 const resolveEnvironment = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,26 +14,30 @@ const resolveEnvironment = () => {
   return { supabaseUrl, supabaseAnonKey };
 };
 
-const buildServerCookiesAdapter = () => {
-  const cookieStore = cookies();
-
-  return {
-    getAll() {
-      return cookieStore.getAll().map(({ name, value }) => ({ name, value }));
-    },
-  };
-};
-
 const createServerInstance = (): SupabaseClient => {
   const { supabaseUrl, supabaseAnonKey } = resolveEnvironment();
+  const cookieStore = cookies();
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: buildServerCookiesAdapter(),
+    cookies: {
+      getAll() {
+        return cookieStore.getAll().map(({ name, value }) => ({ name, value }));
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          cookieStore.set({ name, value, ...options });
+        });
+      },
+      deleteAll(cookiesToDelete) {
+        cookiesToDelete.forEach(({ name, options }) => {
+          cookieStore.delete({ name, ...options });
+        });
+      },
+    },
   });
 };
 
-export const getSupabaseServerClient = cache(createServerInstance);
-export const createSupabaseServerClient = () => getSupabaseServerClient();
+export const createSupabaseServerClient = () => createServerInstance();
 
 export const createSupabaseMiddlewareClient = (
   req: NextRequest,
@@ -50,6 +53,11 @@ export const createSupabaseMiddlewareClient = (
       setAll(cookiesToSet) {
         for (const { name, value, options } of cookiesToSet) {
           res.cookies.set({ name, value, ...options });
+        }
+      },
+      deleteAll(cookiesToDelete) {
+        for (const { name, options } of cookiesToDelete) {
+          res.cookies.delete({ name, ...options });
         }
       },
     },

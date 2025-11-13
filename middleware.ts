@@ -8,6 +8,11 @@ export async function middleware(req: NextRequest) {
 
   const { data } = await supabase.auth.getUser();
 
+  const recoveryCookie = req.cookies.get("sv-recovery-session");
+  if (recoveryCookie?.value === "1") {
+    return NextResponse.redirect(new URL("/restore-password", req.url));
+  }
+
   if (!data?.user) {
     return NextResponse.redirect(new URL("/", req.url));
   }
@@ -16,5 +21,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/panel/:path*"],
+  matcher: ["/panel/:path*", "/profile/:path*"],
 };
