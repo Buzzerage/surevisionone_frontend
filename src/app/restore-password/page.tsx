@@ -1,182 +1,80 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
-
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/browser-client";
 import { useAppTranslations } from "@/lib/i18n";
 
-const RECOVERY_COOKIE_NAME = "sv-recovery";
-const RECOVERY_COOKIE_MAX_AGE = 15 * 60; // 15 minutos
-
-// --- Util: timeout para promesas (evita "cargas infinitas")
-function withTimeout<T>(p: Promise<T>, ms = 10000, label = "operation"): Promise<T> {
+// 🧩 Utilidad para evitar “cargando infinito”
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-    p.then(v => { clearTimeout(t); resolve(v); })
-     .catch(e => { clearTimeout(t); reject(e); });
-  });
-}
+    const timer = setTimeout(() => {
+      console.error(`[withTimeout] ${label} timed out after ${ms}ms`);
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
 
-// --- Util: limpiar parámetros de auth de la URL
-function scrubAuthFromUrl() {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  url.hash = "";
-  const toDelete = ["token","token_hash","code","type","email","error","error_code","error_description"];
-  let modified = false;
-  for (const k of toDelete) {
-    if (url.searchParams.has(k)) { url.searchParams.delete(k); modified = true; }
-  }
-  if (modified || window.location.hash) {
-    window.history.replaceState({}, "", url.toString());
-  }
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
 }
 
 export default function RestorePasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const copy = useAppTranslations("auth");
   const restoreCopy = copy.restore;
 
-  const [phase, setPhase] = useState<"verifying" | "ready">("verifying");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"verifying" | "ready">("verifying");
 
-  const setRecoveryCookie = useCallback(() => {
-    if (typeof document === "undefined") return;
-    document.cookie = `${RECOVERY_COOKIE_NAME}=1; Max-Age=${RECOVERY_COOKIE_MAX_AGE}; Path=/; SameSite=Lax`;
-  }, []);
-
-  const clearRecoveryCookie = useCallback(() => {
-    if (typeof document === "undefined") return;
-    document.cookie = `${RECOVERY_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
-  }, []);
-
-  // Congelamos una key estable para deps del effect
-  const searchParamsKey = useMemo(() => searchParams.toString(), [searchParams]);
-
+  // 1️⃣ Procesar sesión implícita (ya procesada por detectSessionInUrl)
   useEffect(() => {
-    let active = true;
-
-    async function verify() {
-      setError(null);
-      setPhase("verifying");
-
-      // 1) Si ya hay sesión, damos paso directamente
+    const processSession = async () => {
       try {
-        const { data: { session } } = await withTimeout(supabase.auth.getSession(), 7000, "getSession");
-        if (!active) return;
-        if (session?.user?.id) {
-          setUserId(session.user.id);
-          setPhase("ready");
-          scrubAuthFromUrl();
-          return;
+        console.log("[restore-password] Checking session after redirect…");
+        const { data, error } = await withTimeout(
+          supabase.auth.getSession(),
+          8000,
+          "getSession(after redirect)"
+        );
+
+        if (error) {
+          console.warn("[restore-password] getSession error:", error);
+          setError(restoreCopy.invalid);
         }
-      } catch (error) {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("No session available before verifying password recovery", error);
-        }
-      }
 
-      // 2) Leemos posibles credenciales en URL
-      const qs = new URLSearchParams(searchParamsKey);
-      const rawCode = qs.get("code") || (typeof window !== "undefined" ? new URLSearchParams(window.location.hash.replace(/^#/, "")).get("code") : null);
-      const token = qs.get("token");
-      const email = qs.get("email");
-
-      let gotUserId: string | null = null;
-      // 2a) Intentar exchange por code (cuando Supabase te pone ?code= o #code=)
-      if (rawCode) {
-        try {
-          const { data, error: exErr } = await withTimeout(supabase.auth.exchangeCodeForSession(rawCode), 10000, "exchangeCodeForSession");
-          if (!active) return;
-          if (exErr) throw exErr;
-          gotUserId = data.session?.user?.id ?? data.user?.id ?? null;
-        } catch (error: unknown) {
-          if (process.env.NODE_ENV !== "production") {
-            console.warn("Recovery code exchange failed", error);
-          }
-        }
-      }
-
-      // 2b) Intentar verifyOtp con token + email (cuando la plantilla manda estos)
-      if (!gotUserId && token && email) {
-        try {
-          const { data, error: vErr } = await withTimeout(
-            supabase.auth.verifyOtp({ type: "recovery", token, email }),
-            10000,
-            "verifyOtp(recovery)"
-          );
-          if (!active) return;
-          if (vErr) throw vErr;
-          gotUserId = data.session?.user?.id ?? data.user?.id ?? null;
-        } catch (error: unknown) {
-          if (process.env.NODE_ENV !== "production") {
-            console.warn("OTP verification for password recovery failed", error);
-          }
-        }
-      }
-
-      // 2c) Último intento: quizá ya hay sesión tras lo anterior
-      if (!gotUserId) {
-        try {
-          const { data: { session } } = await withTimeout(supabase.auth.getSession(), 7000, "getSession-final");
-          if (!active) return;
-          gotUserId = session?.user?.id ?? null;
-        } catch (error) {
-          if (process.env.NODE_ENV !== "production") {
-            console.warn("Unable to obtain a session after recovery attempts", error);
-          }
-        }
-      }
-
-      if (!active) return;
-
-      if (gotUserId) {
-        setUserId(gotUserId);
+        console.log("[restore-password] Session after redirect:", data.session);
         setPhase("ready");
-        scrubAuthFromUrl();
-        setRecoveryCookie();
-        return;
+      } catch (err) {
+        console.error("[restore-password] Error restoring session:", err);
+        setError(restoreCopy.invalid);
+        setPhase("ready");
       }
+    };
 
-      // Si llega aquí, no se pudo validar
-      const qsError = qs.get("error_description");
-      setError(qsError ?? restoreCopy.invalid);
-      setPhase("ready");
-    }
+    processSession();
+  }, [restoreCopy.invalid]);
 
-    verify().catch((e) => {
-      if (!active) return;
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("Verification failed:", e);
-      }
-      setError(restoreCopy.invalid);
-      setPhase("ready");
-    });
-
-    return () => { active = false; };
-  }, [searchParamsKey, restoreCopy.invalid, setRecoveryCookie]);
-
-  useEffect(() => {
-    if (success) {
-      clearRecoveryCookie();
-    }
-  }, [clearRecoveryCookie, success]);
-
+  // 2️⃣ Enviar nueva contraseña
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!userId) {
-      setError(restoreCopy.unauthorized);
+    // Por si acaso alguien pulsa mientras aún está “verifying”
+    if (phase !== "ready") {
+      setError(restoreCopy.invalid);
       return;
     }
 
@@ -199,26 +97,69 @@ export default function RestorePasswordPage() {
     setLoading(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
+      console.log("[restore-password] start updateUser", { password });
+
+      // 🔒 Aseguramos que sigue habiendo sesión válida justo antes
+      const {
+        data: { session },
+      } = await withTimeout(
+        supabase.auth.getSession(),
+        8000,
+        "getSession(before updateUser)"
+      );
+
+      if (!session?.user) {
+        console.error("[restore-password] No session before updateUser");
+        throw new Error(restoreCopy.unauthorized);
+      }
+
+      // 🧩 Cambio de contraseña con timeout defensivo
+      const { data, error: updateError } = await withTimeout(
+        supabase.auth.updateUser({ password }),
+        12000,
+        "updateUser(password)"
+      );
+
+      console.log("[restore-password] updateUser response:", data, updateError);
 
       if (updateError) {
         throw updateError;
       }
 
       setSuccess(restoreCopy.success);
-      clearRecoveryCookie();
+
+      // 🧩 Cerrar sesión temporal tras cambiar la contraseña (también con timeout)
+      try {
+        console.log("[restore-password] signing out global session…");
+        await withTimeout(
+          supabase.auth.signOut({ scope: "global" }),
+          8000,
+          "signOut(global)"
+        );
+        console.log("[restore-password] signOut completed");
+      } catch (signOutErr) {
+        console.warn("[restore-password] signOut failed (continuing anyway):", signOutErr);
+      }
 
       setTimeout(() => {
-        router.replace("/panel");
+        router.replace("/");
       }, 1200);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : restoreCopy.genericError;
-      setError(message || restoreCopy.genericError);
+    } catch (err: any) {
+      console.error("[restore-password] updateUser failed:", err);
+
+      // Caso típico cuando la sesión se pierde en medio del flujo
+      if (err?.name === "AuthSessionMissingError") {
+        setError(restoreCopy.unauthorized);
+      } else {
+        setError(err?.message || restoreCopy.genericError);
+      }
     } finally {
+      // 💡 Pase lo que pase (éxito / error / timeout), el loading se apaga
       setLoading(false);
     }
   };
 
+  // 3️⃣ UI
   return (
     <div className="min-h-screen bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-4 py-12">
@@ -237,7 +178,7 @@ export default function RestorePasswordPage() {
               <p className="text-sm text-[var(--color-text-accent)]">{success}</p>
               <button
                 type="button"
-                onClick={() => router.push("/panel")}
+                onClick={() => router.push("/")}
                 className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent-primary)] px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
               >
                 {restoreCopy.goToPanel}
@@ -275,11 +216,11 @@ export default function RestorePasswordPage() {
                 />
               </div>
 
-              {error ? <p className="text-sm text-red-500">{error}</p> : null}
+              {error && <p className="text-sm text-red-500">{error}</p>}
 
               <button
                 type="submit"
-                disabled={loading || !userId}
+                disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-accent-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

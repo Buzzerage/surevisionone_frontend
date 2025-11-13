@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-
-import { supabase } from "@/lib/supabase/client";
-
+import { supabase } from "@/lib/supabase/browser-client";
 import type { Arbitrage } from "../utils/types";
 
 /**

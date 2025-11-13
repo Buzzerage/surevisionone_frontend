@@ -1,5 +1,6 @@
-import { supabase } from "./client";
+import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 
+const supabase = createSupabaseServerClient(req, res);
 type SupabaseAuthInternals = {
   _removeSession?: () => Promise<void>;
   storageKey?: string;

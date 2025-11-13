@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 
-import { supabase } from "@/lib/supabase/client";
-
+import { supabase } from "@/lib/supabase/browser-client";
 /**
  * Hook unificado para manejar autenticación y sesión de usuario con Supabase.
  * Sustituye completamente a los antiguos useAuthSession y useSupabaseSession.

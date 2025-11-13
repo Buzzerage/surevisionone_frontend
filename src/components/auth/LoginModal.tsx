@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader, Lock, Mail, RefreshCw, ShieldCheck, X } from "lucide-react";
 import type { AuthError } from "@supabase/supabase-js";
 
-import { supabase } from "@/lib/supabase/client";
+import { supabase  } from "@/lib/supabase/client";
 import { useLanguageContext } from "@/providers/LanguageProvider";
 import { useAppTranslations } from "@/lib/i18n";
 import {
@@ -81,17 +81,15 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     try {
       if (mode === "forgot") {
         const redirectTo = resolveRestoreRedirect();
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          email,
-          redirectTo ? { redirectTo } : undefined
-        );
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: redirectTo ?? undefined,
+        });
 
         if (resetError) {
           throw resetError;
         }
 
         setSuccessMessage(copy.success.reset);
-        return;
       }
 
       if (mode === "register") {

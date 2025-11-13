@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/browser-client";
 import { getLanguageOptions } from "@/lib/i18n";
 import { DEFAULT_LANGUAGE, type LanguageCode } from "@/lib/i18n/language";
 

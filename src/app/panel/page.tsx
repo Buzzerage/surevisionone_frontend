@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MailCheck, RefreshCw, ShieldAlert, ShieldCheck, ShieldHalf } from "lucide-react";
 import ArbitrageList from "@/features/arbitrage/components/ArbitrageList";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/browser-client";
 import { useAppTranslations } from "@/lib/i18n";
 
 type VerificationMessageState =
@@ -21,7 +21,6 @@ export default function ArbitragesPage() {
     useState<VerificationMessageState>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [verificationAcknowledged, setVerificationAcknowledged] = useState(false);
-
   const isVerified = useMemo(() => Boolean(user?.email_confirmed_at), [user?.email_confirmed_at]);
 
   useEffect(() => {

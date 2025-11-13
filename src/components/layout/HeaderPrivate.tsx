@@ -7,7 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import Logo from "@/components/common/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/browser-client";
 import { useThemeContext } from "@/providers/ThemeProvider";
 import { useAppTranslations } from "@/lib/i18n";
 import { clearSupabaseSession } from "@/lib/supabase/clearSession";
@@ -24,7 +24,6 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
   const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const userEmail = session?.user?.email ?? copy.defaultUser;
-
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();

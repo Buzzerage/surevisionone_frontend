@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { AlertTriangle, ArrowUpRight, Crown, Loader2, Mail, ShieldCheck, Trash2 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import { supabase  } from "@/lib/supabase/client";
 import ProfileCard from "./components/ProfileCard";
 import PasswordForm, { type PasswordFormValues } from "./components/PasswordForm";
 import StatusBanner from "./components/StatusBanner";
