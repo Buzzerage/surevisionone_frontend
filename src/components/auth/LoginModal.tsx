@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader, Lock, Mail, RefreshCw, ShieldCheck, X } from "lucide-react";
 import type { AuthError } from "@supabase/supabase-js";
 
-import { supabase  } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/browser-client";
 import { useLanguageContext } from "@/providers/LanguageProvider";
 import { useAppTranslations } from "@/lib/i18n";
 import {

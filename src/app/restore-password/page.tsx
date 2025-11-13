@@ -144,14 +144,18 @@ export default function RestorePasswordPage() {
       setTimeout(() => {
         router.replace("/");
       }, 1200);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[restore-password] updateUser failed:", err);
 
+      const errorObject = err as { name?: unknown; message?: unknown } | null;
+
       // Caso típico cuando la sesión se pierde en medio del flujo
-      if (err?.name === "AuthSessionMissingError") {
+      if (errorObject?.name === "AuthSessionMissingError") {
         setError(restoreCopy.unauthorized);
+      } else if (typeof errorObject?.message === "string" && errorObject.message.length > 0) {
+        setError(errorObject.message);
       } else {
-        setError(err?.message || restoreCopy.genericError);
+        setError(restoreCopy.genericError);
       }
     } finally {
       // 💡 Pase lo que pase (éxito / error / timeout), el loading se apaga

@@ -1,25 +1,38 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-let client: ReturnType<typeof createClient> | null = null;
+declare global {
+  var __SUPABASE_BROWSER_CLIENT__: SupabaseClient | undefined;
+}
 
-export const browserClient = () => {
-  if (client) return client;
+const resolveEnvironment = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  client = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Missing Supabase browser environment configuration");
+  }
+
+  return { supabaseUrl, supabaseAnonKey };
+};
+
+export const getSupabaseBrowserClient = (): SupabaseClient => {
+  if (!globalThis.__SUPABASE_BROWSER_CLIENT__) {
+    const { supabaseUrl, supabaseAnonKey } = resolveEnvironment();
+
+    globalThis.__SUPABASE_BROWSER_CLIENT__ = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         flowType: "implicit",
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storage: typeof window !== "undefined" ? localStorage : undefined,
+        storage: typeof window !== "undefined" ? window.localStorage : undefined,
       },
-    }
-  );
+    });
+  }
 
-  return client;
+  return globalThis.__SUPABASE_BROWSER_CLIENT__;
 };
+
+export const supabase = getSupabaseBrowserClient();
