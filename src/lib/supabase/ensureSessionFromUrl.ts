@@ -8,11 +8,12 @@ const parseNumber = (value: string | null) => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
-const stripHashFromUrl = () => {
+const stripHashFromUrl = (stripSearch = false) => {
   if (typeof window === "undefined") return;
 
   const { pathname, search } = window.location;
-  window.history.replaceState({}, document.title, `${pathname}${search}`);
+  const nextSearch = stripSearch ? "" : search;
+  window.history.replaceState({}, document.title, `${pathname}${nextSearch}`);
 };
 
 export type EnsureSessionFromUrlResult = {
@@ -27,7 +28,26 @@ export const ensureSessionFromUrl = async (
     return { processed: false };
   }
 
-  const { hash } = window.location;
+  const { hash, search } = window.location;
+
+  // Recovery links may hit the app with token & type in the query string
+  const searchParams = new URLSearchParams(search);
+  const recoveryToken = searchParams.get("token") ?? searchParams.get("token_hash");
+  const recoveryType = searchParams.get("type");
+
+  if (recoveryToken && recoveryType === "recovery") {
+    const { error } = await client.auth.verifyOtp({
+      type: "recovery",
+      token_hash: recoveryToken,
+    });
+
+    if (!error) {
+      stripHashFromUrl(true);
+    }
+
+    return { processed: true, error };
+  }
+
   if (!hash || hash.length <= 1) {
     return { processed: false };
   }
