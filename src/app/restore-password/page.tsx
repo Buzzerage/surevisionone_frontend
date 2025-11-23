@@ -113,8 +113,13 @@ export default function RestorePasswordPage() {
     } finally {
       try {
         console.log("[restore-password] signing out global session…");
-        await supabase.auth.signOut({ scope: "global" });
-        console.log("[restore-password] signOut completed");
+        // No bloquear la UI por el sign-out global; si falla, continuamos
+        void supabase.auth
+          .signOut({ scope: "global" })
+          .then(() => console.log("[restore-password] signOut completed"))
+          .catch((signOutErr) =>
+            console.warn("[restore-password] signOut failed (continuing anyway):", signOutErr)
+          );
       } catch (signOutErr) {
         console.warn("[restore-password] signOut failed (continuing anyway):", signOutErr);
       } finally {
