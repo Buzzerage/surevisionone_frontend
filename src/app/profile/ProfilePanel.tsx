@@ -278,9 +278,10 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         throw new Error(sessionError.message || copy.feedback.deleteSessionCheck);
       }
 
-      const accessToken = sessionData?.session?.access_token;
+      const session = sessionData.session;
+      const accessToken = session?.access_token;
 
-      if (!accessToken) {
+      if (!session || !accessToken) {
         throw new Error(copy.feedback.deleteTokenMissing);
       }
 
@@ -290,7 +291,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ userId: sessionData.session.user.id }),
+        body: JSON.stringify({ userId: session.user.id }),
       });
 
       const responseHasJson = response.headers
@@ -303,11 +304,11 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
       if (!response.ok) {
         const errorMessage =
           payload &&
-          typeof payload === "object" &&
-          payload !== null &&
-          "error" in payload &&
-          typeof payload.error === "string" &&
-          payload.error.length > 0
+            typeof payload === "object" &&
+            payload !== null &&
+            "error" in payload &&
+            typeof payload.error === "string" &&
+            payload.error.length > 0
             ? payload.error
             : copy.feedback.deleteFailed;
         throw new Error(errorMessage);
@@ -430,11 +431,10 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
                         key={region}
                         type="button"
                         onClick={() => handleRegionSelect(region)}
-                        className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${
-                          isActive
+                        className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${isActive
                             ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
                             : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
-                        }`}
+                          }`}
                         aria-label={copy.mainCard.regionOptions[region]}
                       >
                         <span
@@ -522,9 +522,8 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <ProfileCard
             icon={<Crown className="h-6 w-6" />}
-            title={`${copy.planCard.titlePrefix} ${normalizedPlan}${
-              copy.planCard.titleSuffix ? ` ${copy.planCard.titleSuffix}` : ""
-            }`.trim()}
+            title={`${copy.planCard.titlePrefix} ${normalizedPlan}${copy.planCard.titleSuffix ? ` ${copy.planCard.titleSuffix}` : ""
+              }`.trim()}
             description={planMetadata.description}
           >
             <ul className="space-y-3 text-sm text-[var(--color-text-accent)]">

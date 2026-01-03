@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/browser-client";
-import { markRecoverySession, clearRecoverySessionMark } from "@/lib/supabase/recoverySessionCookie";
+import { clearRecoverySessionMark } from "@/lib/supabase/recoverySessionCookie";
 import { useAppTranslations } from "@/lib/i18n";
 
 export default function RestorePasswordPage() {
@@ -55,7 +55,6 @@ export default function RestorePasswordPage() {
     }
 
     setLoading(true);
-    let passwordUpdated = false;
 
     try {
       const { data, error: updateError } = await supabase.auth.updateUser({ password });
@@ -66,8 +65,8 @@ export default function RestorePasswordPage() {
         throw updateError;
       }
 
-      passwordUpdated = true;
       setSuccess(restoreCopy.success);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("[restore-password] updateUser failed:", err);
 

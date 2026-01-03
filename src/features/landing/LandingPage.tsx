@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Check, DollarSign, Maximize, Rocket, Shield, TrendingUp, Zap } from "lucide-react";
+import { Check, Maximize, Rocket, Shield, TrendingUp, Zap } from "lucide-react";
 
 import LoginModal from "@/components/auth/LoginModal";
 import { useLanguageContext } from "@/providers/LanguageProvider";
@@ -13,44 +13,8 @@ type LandingPageProps = {
   onStartClick: () => void;
 };
 
-type ArbitrageExample = {
-  percentage: number;
-  team1: string;
-  team2: string;
-};
-
-const ARBITRAGE_EXAMPLES: ArbitrageExample[] = [
-  { percentage: 2.85, team1: "Lakers", team2: "Celtics" },
-  { percentage: 1.9, team1: "Real Madrid", team2: "Barcelona" },
-];
 
 const FEATURE_ICONS: LucideIcon[] = [Zap, TrendingUp, Shield, Maximize];
-
-
-function ArbitrageListMockup({ title }: { title: string }) {
-  return (
-    <div className="w-full h-full p-4 md:p-6 bg-[var(--color-card-bg)] rounded-xl shadow-inner border border-[var(--color-border)]">
-      <h3 className="text-xl font-semibold mb-4 text-[var(--color-text-accent)] flex items-center">
-        <DollarSign className="w-5 h-5 mr-2 text-[var(--color-green-text)]" />
-        {title}
-      </h3>
-
-      {ARBITRAGE_EXAMPLES.map((arb) => (
-        <div
-          key={`${arb.team1}-${arb.team2}`}
-          className="p-4 mb-3 rounded-xl bg-[var(--color-subtle-bg)] border border-[var(--color-border)] shadow-md"
-        >
-          <div className="text-sm font-bold inline-block px-3 py-1 rounded-full mb-3 bg-[var(--color-green-text)] text-white shadow-lg">
-            +{arb.percentage.toFixed(2)}%
-          </div>
-          <p className="text-md font-medium text-[var(--color-text-accent)]">
-            {arb.team1} vs {arb.team2}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function LandingPage({ onStartClick }: LandingPageProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -101,8 +65,19 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
               <Rocket className="w-5 h-5 mr-2" /> {copy.hero.cta}
             </button>
 
-            <div className="mt-20">
-              <ArbitrageListMockup title={copy.arbitrageTitle} />
+            <div className="mt-20 flex justify-center">
+              <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl shadow-2xl border border-[var(--color-border)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/earnings_graph.png"
+                  alt="Earnings Graph - Projected Growth with SureVisionOne"
+                  className="w-full h-auto object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white text-left">
+                  <p className="font-bold text-lg">Visualiza tu éxito</p>
+                  <p className="text-sm opacity-90">Pasa de resultados planos a un crecimiento exponencial.</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -140,11 +115,10 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
               {plans.map((plan) => (
                 <div
                   key={plan.name}
-                  className={`p-8 rounded-2xl border transition-all duration-300 ${
-                    plan.isPopular
-                      ? "border-[var(--color-accent-primary)] bg-[var(--color-card-bg)] shadow-2xl scale-[1.05]"
-                      : "border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-md hover:shadow-xl"
-                  }`}
+                  className={`p-8 rounded-2xl border transition-all duration-300 ${plan.isPopular
+                    ? "border-[var(--color-accent-primary)] bg-[var(--color-card-bg)] shadow-2xl scale-[1.05]"
+                    : "border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-md hover:shadow-xl"
+                    }`}
                 >
                   <h3 className="text-2xl font-bold mb-1 text-[var(--color-text-accent)]">{plan.name}</h3>
                   <p className="text-[var(--color-text-secondary)] mb-4">{plan.tagline}</p>
@@ -154,13 +128,12 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
 
                   <button
                     onClick={onStartClick}
-                    className={`w-full py-3 font-semibold rounded-lg transition-colors ${
-                      plan.isPopular
-                        ? "bg-[var(--color-accent-primary)] text-white hover:bg-[#0ea5e9]"
-                        : plan.isFree
+                    className={`w-full py-3 font-semibold rounded-lg transition-colors ${plan.isPopular
+                      ? "bg-[var(--color-accent-primary)] text-white hover:bg-[#0ea5e9]"
+                      : plan.isFree
                         ? "bg-[var(--color-green-text)] text-white hover:bg-green-600"
                         : "bg-[var(--color-background-tertiary)] text-[var(--color-text-accent)] hover:bg-[var(--color-hover-bg)]"
-                    }`}
+                      }`}
                   >
                     {plan.cta}
                   </button>

@@ -10,7 +10,7 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import { supabase } from "@/lib/supabase/browser-client";
 import { useThemeContext } from "@/providers/ThemeProvider";
 import { useAppTranslations } from "@/lib/i18n";
-import { clearSupabaseSession } from "@/lib/supabase/clearSession";
+
 
 type HeaderPrivateProps = {
   session: Session | null;

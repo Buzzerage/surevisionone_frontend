@@ -209,7 +209,7 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
           .from("profiles")
           .upsert(
             { id: targetUserId, language: nextLanguage, ...(profileOverrides ?? {}) },
-            { onConflict: "id", returning: "minimal" }
+            { onConflict: "id" }
           );
 
         if (error) {

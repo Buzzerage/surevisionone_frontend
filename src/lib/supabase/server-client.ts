@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest, NextResponse } from "next/server";
@@ -28,11 +29,6 @@ const createServerInstance = async (): Promise<SupabaseClient> => {
           cookieStore.set({ name, value, ...options });
         });
       },
-      deleteAll(cookiesToDelete: any) {
-        cookiesToDelete.forEach(({ name, options }: any) => {
-          cookieStore.delete({ name, ...options });
-        });
-      },
     },
   });
 };
@@ -51,21 +47,12 @@ export const createSupabaseMiddlewareClient = (
         return req.cookies.getAll().map(({ name, value }) => ({ name, value }));
       },
       setAll(cookiesToSet: any) {
-        cookiesToSet.forEach(({ name, value, options }: any) => {
+        cookiesToSet.forEach(({ name, value }: any) => {
           req.cookies.set(name, value);
         });
 
         cookiesToSet.forEach(({ name, value, options }: any) => {
           res.cookies.set({ name, value, ...options });
-        });
-      },
-      deleteAll(cookiesToDelete: any) {
-        cookiesToDelete.forEach(({ name, options }: any) => {
-          req.cookies.delete(name);
-        });
-
-        cookiesToDelete.forEach(({ name, options }) => {
-          res.cookies.delete({ name, ...options });
         });
       },
     },
