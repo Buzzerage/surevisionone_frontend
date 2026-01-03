@@ -28,14 +28,6 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
     try {
       await supabase.auth.signOut();
     } finally {
-      try {
-        await clearSupabaseSession();
-      } catch (sessionError) {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("Unable to clear local Supabase session", sessionError);
-        }
-      }
-      document.cookie = "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       router.push("/");
     }
   };

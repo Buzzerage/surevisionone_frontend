@@ -19,30 +19,24 @@ export function useSupabaseSession(): UseSupabaseSessionResult {
   const [error, setError] = useState<AuthError | null>(null);
 
   useEffect(() => {
-    let active = true;
+    let mounted = true;
 
     const init = async () => {
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
 
-        const currentSession = data.session ?? null;
-        if (!active) return;
+        if (mounted) {
+          if (sessionError) throw sessionError;
 
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setError(null);
-      } catch (err) {
-        if (!active) return;
-        const authError = err as AuthError;
-        if (process.env.NODE_ENV !== "production") {
-          console.error("Error obteniendo sesión de Supabase", authError);
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
         }
-        setError(authError);
-        setSession(null);
-        setUser(null);
+      } catch (err) {
+        if (mounted) {
+          setError(err as AuthError);
+        }
       } finally {
-        if (active) {
+        if (mounted) {
           setLoading(false);
         }
       }
@@ -51,25 +45,15 @@ export function useSupabaseSession(): UseSupabaseSessionResult {
     void init();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
-      if (!active) return;
-
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-
-      if (
-        event === "SIGNED_IN" ||
-        event === "SIGNED_OUT" ||
-        event === "TOKEN_REFRESHED" ||
-        event === "INITIAL_SESSION" ||
-        event === "PASSWORD_RECOVERY"
-      ) {
+      if (mounted) {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
         setLoading(false);
-        setError(null);
       }
     });
 
     return () => {
-      active = false;
+      mounted = false;
       listener.subscription.unsubscribe();
     };
   }, []);

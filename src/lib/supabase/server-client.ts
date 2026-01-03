@@ -14,22 +14,22 @@ const resolveEnvironment = () => {
   return { supabaseUrl, supabaseAnonKey };
 };
 
-const createServerInstance = (): SupabaseClient => {
+const createServerInstance = async (): Promise<SupabaseClient> => {
   const { supabaseUrl, supabaseAnonKey } = resolveEnvironment();
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll().map(({ name, value }) => ({ name, value }));
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
+      setAll(cookiesToSet: any) {
+        cookiesToSet.forEach(({ name, value, options }: any) => {
           cookieStore.set({ name, value, ...options });
         });
       },
-      deleteAll(cookiesToDelete) {
-        cookiesToDelete.forEach(({ name, options }) => {
+      deleteAll(cookiesToDelete: any) {
+        cookiesToDelete.forEach(({ name, options }: any) => {
           cookieStore.delete({ name, ...options });
         });
       },
@@ -37,7 +37,7 @@ const createServerInstance = (): SupabaseClient => {
   });
 };
 
-export const createSupabaseServerClient = () => createServerInstance();
+export const createSupabaseServerClient = async () => await createServerInstance();
 
 export const createSupabaseMiddlewareClient = (
   req: NextRequest,
@@ -50,15 +50,23 @@ export const createSupabaseMiddlewareClient = (
       getAll() {
         return req.cookies.getAll().map(({ name, value }) => ({ name, value }));
       },
-      setAll(cookiesToSet) {
-        for (const { name, value, options } of cookiesToSet) {
+      setAll(cookiesToSet: any) {
+        cookiesToSet.forEach(({ name, value, options }: any) => {
+          req.cookies.set(name, value);
+        });
+
+        cookiesToSet.forEach(({ name, value, options }: any) => {
           res.cookies.set({ name, value, ...options });
-        }
+        });
       },
-      deleteAll(cookiesToDelete) {
-        for (const { name, options } of cookiesToDelete) {
+      deleteAll(cookiesToDelete: any) {
+        cookiesToDelete.forEach(({ name, options }: any) => {
+          req.cookies.delete(name);
+        });
+
+        cookiesToDelete.forEach(({ name, options }) => {
           res.cookies.delete({ name, ...options });
-        }
+        });
       },
     },
   });
