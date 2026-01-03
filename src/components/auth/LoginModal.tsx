@@ -21,18 +21,18 @@ type LoginModalProps = {
 
 const resolveRestoreRedirect = () => {
   if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin.replace(/\/$/, "")}/restore-password`;
+    return `${window.location.origin.replace(/\/$/, "")}/auth/callback?next=/restore-password`;
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   if (siteUrl) {
-    return `${siteUrl.replace(/\/$/, "")}/restore-password`;
+    return `${siteUrl.replace(/\/$/, "")}/auth/callback?next=/restore-password`;
   }
 
   const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL ?? "";
   if (vercelUrl) {
     const origin = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
-    return `${origin.replace(/\/$/, "")}/restore-password`;
+    return `${origin.replace(/\/$/, "")}/auth/callback?next=/restore-password`;
   }
 
   return undefined;

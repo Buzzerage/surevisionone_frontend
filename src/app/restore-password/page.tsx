@@ -4,8 +4,8 @@ import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
+
 import { supabase } from "@/lib/supabase/browser-client";
-import { ensureSessionFromUrl } from "@/lib/supabase/ensureSessionFromUrl";
 import { markRecoverySession, clearRecoverySessionMark } from "@/lib/supabase/recoverySessionCookie";
 import { useAppTranslations } from "@/lib/i18n";
 
@@ -21,47 +21,18 @@ export default function RestorePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"verifying" | "ready">("verifying");
 
-  // 1️⃣ Procesar sesión implícita (ya procesada por detectSessionInUrl)
+  // 1️⃣ La sesión debe estar lista gracias al middleware/callback
   useEffect(() => {
-    const processSession = async () => {
-      try {
-        markRecoverySession();
-
-        const { processed, error: recoveryError } = await ensureSessionFromUrl(supabase);
-
-        if (recoveryError) {
-          console.error("[restore-password] Failed to recover session from URL:", recoveryError);
-          setError(restoreCopy.invalid);
-          setPhase("ready");
-          clearRecoverySessionMark();
-          return;
-        }
-
-        if (processed) {
-          console.log("[restore-password] Session tokens recovered from URL");
-        }
-        setPhase("ready");
-      } catch (err) {
-        console.error("[restore-password] Error restoring session:", err);
-        setError(restoreCopy.invalid);
-        setPhase("ready");
-        clearRecoverySessionMark();
-      }
-    };
-
-    processSession();
-    return () => {
-      clearRecoverySessionMark();
-    };
-  }, [restoreCopy.invalid]);
+    // Si no hay sesión tras un breve periodo, el AuthGuard o la pantalla mostrarán error
+    // Pero con PKCE, al llegar aquí ya deberíamos tener cookies.
+    setPhase("ready");
+  }, []);
 
   // 2️⃣ Enviar nueva contraseña
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    let passwordUpdated = false;
 
-    // Por si acaso alguien pulsa mientras aún está “verifying”
     if (phase !== "ready") {
       setError(restoreCopy.invalid);
       return;
@@ -84,9 +55,9 @@ export default function RestorePasswordPage() {
     }
 
     setLoading(true);
+    let passwordUpdated = false;
 
     try {
-      // 🧩 Cambio de contraseña
       const { data, error: updateError } = await supabase.auth.updateUser({ password });
 
       console.log("[restore-password] updateUser response:", data, updateError);
@@ -95,46 +66,38 @@ export default function RestorePasswordPage() {
         throw updateError;
       }
 
-      setSuccess(restoreCopy.success);
       passwordUpdated = true;
-    } catch (err: unknown) {
+      setSuccess(restoreCopy.success);
+    } catch (err: any) {
       console.error("[restore-password] updateUser failed:", err);
 
-      const errorObject = err as { name?: unknown; message?: unknown } | null;
-
-      // Caso típico cuando la sesión se pierde en medio del flujo
-      if (errorObject?.name === "AuthSessionMissingError") {
+      if (err?.name === "AuthSessionMissingError") {
         setError(restoreCopy.unauthorized);
-      } else if (typeof errorObject?.message === "string" && errorObject.message.length > 0) {
-        setError(errorObject.message);
+      } else if (typeof err?.message === "string" && err.message.length > 0) {
+        setError(err.message);
       } else {
         setError(restoreCopy.genericError);
       }
     } finally {
-      try {
-        console.log("[restore-password] signing out global session…");
-        // No bloquear la UI por el sign-out global; si falla, continuamos
-        void supabase.auth
-          .signOut({ scope: "global" })
-          .then(() => console.log("[restore-password] signOut completed"))
-          .catch((signOutErr) =>
-            console.warn("[restore-password] signOut failed (continuing anyway):", signOutErr)
-          );
-      } catch (signOutErr) {
-        console.warn("[restore-password] signOut failed (continuing anyway):", signOutErr);
-      } finally {
-        clearRecoverySessionMark();
-      }
+      console.log("[restore-password] forcing session refresh…");
 
-      if (passwordUpdated) {
-        setTimeout(() => {
-          router.replace("/");
-        }, 1200);
-      }
+      // Sign out old session, but don't wait
+      supabase.auth.signOut({ scope: "global" })
+        .catch(err => console.warn("SignOut global failed", err));
 
-      // 💡 Pase lo que pase (éxito / error / timeout), el loading se apaga
+      // Attempt silent session refresh to ensure stability
+      supabase.auth.refreshSession()
+        .catch(err => console.warn("refreshSession failed", err));
+
+      // After success: force-auth panel load
+      setTimeout(() => {
+        router.replace("/panel");
+      }, 300);
+
       setLoading(false);
+      clearRecoverySessionMark();
     }
+
   };
 
   // 3️⃣ UI

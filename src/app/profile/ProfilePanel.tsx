@@ -160,7 +160,13 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
     } finally {
       setIsSavingPreferences(false);
     }
-  }, [copy.feedback.preferencesSaveFailed, copy.feedback.preferencesSaved, draftLanguage, draftRegion, saveLanguagePreference]);
+  }, [
+    copy.feedback.preferencesSaveFailed,
+    copy.feedback.preferencesSaved,
+    draftLanguage,
+    draftRegion,
+    saveLanguagePreference,
+  ]);
 
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -204,6 +210,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         throw new Error(copy.feedback.passwordMissingEmail);
       }
 
+      // 1️⃣ Reautenticar al usuario con la contraseña actual
       const { error: validationError } = await supabase.auth.signInWithPassword({
         email: userEmail,
         password: formValues.currentPassword,
@@ -217,6 +224,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         throw new Error(message);
       }
 
+      // 2️⃣ Actualizar la contraseña
       const { error: updateError } = await supabase.auth.updateUser({
         password: formValues.newPassword,
       });
@@ -229,11 +237,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         throw new Error(message);
       }
 
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError && process.env.NODE_ENV !== "production") {
-        console.warn("Unable to refresh the session after updating the password", refreshError);
-      }
-
+      // 3️⃣ Feedback de éxito y limpiar formulario
       setFeedback({
         type: "success",
         message: copy.feedback.passwordUpdated,
@@ -349,7 +353,7 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-transparent via-[rgba(6,182,212,0.06)] to-transparent" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-transparent via[rgba(6,182,212,0.06)] to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden w-1/3 bg-[radial-gradient(circle_at_top,rgba(21,70,239,0.18),transparent_65%)] opacity-40 lg:block" />
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-12">
         <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(135deg,var(--card-bg-gradient-start),var(--card-bg-gradient-end))] px-6 py-6 shadow-[0_30px_60px_-35px_var(--color-card-glow)] backdrop-blur">
@@ -446,7 +450,10 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
                           />
                         </span>
                         <span>{region}</span>
-                        <span className="text-[var(--color-text-secondary)] normal-case" aria-hidden="true">
+                        <span
+                          className="text-[var(--color-text-secondary)] normal-case"
+                          aria-hidden="true"
+                        >
                           {copy.mainCard.regionOptions[region]}
                         </span>
                       </button>
@@ -472,7 +479,9 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               {renewalDate ? (
                 <div>
                   <dt className="text-[var(--color-text-secondary)]">{copy.mainCard.renewal}</dt>
-                  <dd className="text-sm font-medium text-[var(--color-text-accent)]">{renewalDate}</dd>
+                  <dd className="text-sm font-medium text-[var(--color-text-accent)]">
+                    {renewalDate}
+                  </dd>
                 </div>
               ) : null}
             </dl>
@@ -513,7 +522,9 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <ProfileCard
             icon={<Crown className="h-6 w-6" />}
-            title={`${copy.planCard.titlePrefix} ${normalizedPlan}${copy.planCard.titleSuffix ? ` ${copy.planCard.titleSuffix}` : ""}`.trim()}
+            title={`${copy.planCard.titlePrefix} ${normalizedPlan}${
+              copy.planCard.titleSuffix ? ` ${copy.planCard.titleSuffix}` : ""
+            }`.trim()}
             description={planMetadata.description}
           >
             <ul className="space-y-3 text-sm text-[var(--color-text-accent)]">
@@ -532,21 +543,32 @@ const ProfilePanel = ({ user }: ProfilePanelProps) => {
               <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
                 {opportunitiesPerDay ? (
                   <div>
-                    <dt className="text-[var(--color-text-secondary)]">{copy.planCard.opportunities}</dt>
-                    <dd className="font-medium text-[var(--color-text-accent)]">{opportunitiesPerDay}</dd>
+                    <dt className="text-[var(--color-text-secondary)]">
+                      {copy.planCard.opportunities}
+                    </dt>
+                    <dd className="font-medium text-[var(--color-text-accent)]">
+                      {opportunitiesPerDay}
+                    </dd>
                   </div>
                 ) : null}
                 {alertsPerDay ? (
                   <div>
-                    <dt className="text-[var(--color-text-secondary)]">{copy.planCard.alerts}</dt>
-                    <dd className="font-medium text-[var(--color-text-accent)]">{alertsPerDay}</dd>
+                    <dt className="text-[var(--color-text-secondary)]">
+                      {copy.planCard.alerts}
+                    </dt>
+                    <dd className="font-medium text-[var(--color-text-accent)]">
+                      {alertsPerDay}
+                    </dd>
                   </div>
                 ) : null}
                 {refreshIntervalMinutes ? (
                   <div>
-                    <dt className="text-[var(--color-text-secondary)]">{copy.planCard.refresh}</dt>
+                    <dt className="text-[var(--color-text-secondary)]">
+                      {copy.planCard.refresh}
+                    </dt>
                     <dd className="font-medium text-[var(--color-text-accent)]">
-                      {copy.planCard.refreshEvery} {refreshIntervalMinutes} {copy.planCard.refreshUnit}
+                      {copy.planCard.refreshEvery} {refreshIntervalMinutes}{" "}
+                      {copy.planCard.refreshUnit}
                     </dd>
                   </div>
                 ) : null}

@@ -4,10 +4,7 @@ import { useState, useEffect } from "react";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase/browser-client";
-/**
- * Hook unificado para manejar autenticación y sesión de usuario con Supabase.
- * Sustituye completamente a los antiguos useAuthSession y useSupabaseSession.
- */
+
 type UseSupabaseSessionResult = {
   session: Session | null;
   user: User | null;
@@ -30,17 +27,13 @@ export function useSupabaseSession(): UseSupabaseSessionResult {
         if (sessionError) throw sessionError;
 
         const currentSession = data.session ?? null;
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setError(null);
       } catch (err) {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         const authError = err as AuthError;
         if (process.env.NODE_ENV !== "production") {
           console.error("Error obteniendo sesión de Supabase", authError);
@@ -57,16 +50,19 @@ export function useSupabaseSession(): UseSupabaseSessionResult {
 
     void init();
 
-    // 🔁 Listener en tiempo real para login/logout/token refresh
     const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
-      if (!active) {
-        return;
-      }
+      if (!active) return;
 
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+      if (
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "INITIAL_SESSION" ||
+        event === "PASSWORD_RECOVERY"
+      ) {
         setLoading(false);
         setError(null);
       }
