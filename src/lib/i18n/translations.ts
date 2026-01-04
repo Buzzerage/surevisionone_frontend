@@ -369,9 +369,9 @@ export const translations: Record<LanguageCode, AppTranslations> = {
             "Lightning-fast scanning across more than 80 bookmakers and exchanges so you never miss a sure bet.",
         },
         {
-          title: "Profit tracking",
+          title: "Detailed Opportunity View",
           description:
-            "Visualise historic profit & loss, analyse performance by sport, and monitor a detailed ROI breakdown.",
+            "Get a clear breakdown of every arbitrage opportunity with precise stake calculations and profitability metrics.",
         },
         {
           title: "Security and transparency",
@@ -412,10 +412,11 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         },
         {
           name: "Pro",
-          price: { eur: 99, gbp: 85 },
+          price: { eur: 39.95, gbp: 34.95 },
           tagline: "Advanced tooling for part-time traders that need instant signals.",
           features: [
-            "Scanning in 80+ bookmakers",
+            "Scanning in 100+ platforms (including exchanges)",
+            "Pre-match and live arbitrage coverage",
             "Opportunities with profit > 0%",
             "Instant SMS/Telegram alerts",
             "Advanced arbitrage calculator",
@@ -423,19 +424,6 @@ export const translations: Record<LanguageCode, AppTranslations> = {
           ],
           isPopular: true,
           cta: "Get the Pro plan",
-        },
-        {
-          name: "Ultimate",
-          price: { eur: 199, gbp: 169 },
-          tagline: "Maximum speed with real-time access and trading workflows.",
-          features: [
-            "Scanning in 100+ platforms (including exchanges)",
-            "Pre-match and live arbitrage coverage",
-            "Opportunities with profit > 0%",
-            "Integration API (Beta)",
-            "Personal advisor",
-          ],
-          cta: "Contact sales",
         },
       ],
     },
@@ -750,9 +738,9 @@ export const translations: Record<LanguageCode, AppTranslations> = {
       footer: "Todos los derechos reservados, SureVisionOne.",
       features: [
         {
-          title: "Visualización de Crecimiento",
+          title: "Vista Detallada de Oportunidades",
           description:
-            "Observa cómo tus beneficios se disparan con nuestro gráfico de rendimiento proyectado. Pasa de un crecimiento plano a una tendencia alcista constante.",
+            "Obtén un desglose claro de cada oportunidad de arbitraje con cálculos precisos de apuesta y métricas de rentabilidad.",
         },
         {
           title: "Datos Reales, Sin Filtros",
@@ -798,30 +786,18 @@ export const translations: Record<LanguageCode, AppTranslations> = {
         },
         {
           name: "PRO",
-          price: { eur: 39, gbp: 34 },
+          price: { eur: 39.95, gbp: 34.95 },
           tagline: "Para quienes buscan oportunidades en todo momento.",
-          features: [
-            "Arbitrajes en partidos en JUEGO (Live)",
-            "Arbitrajes de partidos futuros",
-            "Todos los deportes incluidos",
-            "Sin límite de rentabilidad",
-            "Alertas instantáneas",
-          ],
-          isPopular: true,
-          cta: "Obtener Plan PRO",
-        },
-        {
-          name: "Ultimate",
-          price: { eur: 199, gbp: 169 },
-          tagline: "Máxima velocidad y acceso a arbitrajes en tiempo real y trading.",
           features: [
             "Escaneo en 100+ plataformas (incluye exchanges)",
             "Arbitrajes Pre-partido y Live",
-            "Arbitrajes con beneficio > 0%",
-            "API de Integración (Beta)",
-            "Asesor personalizado",
+            "Todos los deportes incluidos",
+            "Sin límite de rentabilidad",
+            "Alertas instantáneas (SMS/Telegram)",
+            "Calculadora avanzada y Soporte 24/7",
           ],
-          cta: "Contactar",
+          isPopular: true,
+          cta: "Obtener Plan PRO",
         },
       ],
     },

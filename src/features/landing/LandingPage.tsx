@@ -14,7 +14,34 @@ type LandingPageProps = {
 };
 
 
+import ArbitrageCard from "@/features/arbitrage/components/cards/ArbitrageCard";
+import type { Arbitrage, StakeResult } from "@/features/arbitrage/utils/types";
+
 const FEATURE_ICONS: LucideIcon[] = [Zap, TrendingUp, Shield, Maximize];
+
+// Mock data for the arbitrage card
+const MOCK_ARB: Arbitrage = {
+  id_arb: "demo-arb-1",
+  profit_percent: 2.85,
+  date_obtained: "10 min ago",
+  type: "Back vs Back",
+  home: { team: "Lakers", bookmaker: "Bet365", odds: 2.10 },
+  away: { team: "Celtics", bookmaker: "Pinnacle", odds: 2.05 }
+} as unknown as Arbitrage;
+
+const MOCK_STAKES: StakeResult = {
+  stakeHome: 100,
+  stakeAway: 102.44,
+  profit: 5.77,
+  roi: 2.85,
+  stakeBack: 100,
+  stakeLay: 0,
+  liabilityLay: 0,
+  back_comm: 0,
+  lay_comm: 0,
+  currency: "EUR"
+} as unknown as StakeResult;
+
 
 export default function LandingPage({ onStartClick }: LandingPageProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -66,16 +93,33 @@ export default function LandingPage({ onStartClick }: LandingPageProps) {
             </button>
 
             <div className="mt-20 flex justify-center">
-              <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl shadow-2xl border border-[var(--color-border)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/earnings_graph.png"
-                  alt="Earnings Graph - Projected Growth with SureVisionOne"
-                  className="w-full h-auto object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white text-left">
-                  <p className="font-bold text-lg">Visualiza tu éxito</p>
-                  <p className="text-sm opacity-90">Pasa de resultados planos a un crecimiento exponencial.</p>
+              <div className="relative w-full max-w-lg">
+                <div className="absolute -inset-4 bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-600 rounded-2xl opacity-30 blur-xl animate-pulse" />
+                <div className="relative rounded-2xl shadow-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-card-bg)]">
+                  <ArbitrageCard
+                    arb={MOCK_ARB}
+                    stakes={MOCK_STAKES}
+                    deltaState="new"
+                    labels={{
+                      homePrefix: isUkPricing ? "Home" : "Local",
+                      awayPrefix: isUkPricing ? "Away" : "Visitante",
+                      ariaLabel: () => "Demo Arbitrage",
+                      betInfo: {
+                        stake: isUkPricing ? "Stake" : "Apuesta",
+                        liability: isUkPricing ? "Liability" : "Riesgo",
+                        back: "Back",
+                        lay: "Lay"
+                      },
+                      newBadge: isUkPricing ? "New" : "Nuevo"
+                    }}
+                    formatCurrency={(val) => {
+                      if (val === undefined || val === null) return "";
+                      return new Intl.NumberFormat(isUkPricing ? "en-GB" : "es-ES", {
+                        style: "currency",
+                        currency: isUkPricing ? "GBP" : "EUR"
+                      }).format(val);
+                    }}
+                  />
                 </div>
               </div>
             </div>

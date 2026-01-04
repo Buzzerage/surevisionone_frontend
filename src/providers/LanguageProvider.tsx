@@ -160,7 +160,6 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
 
       if (session?.user) {
         setUserId(session.user.id);
-        await fetchProfileLanguage(session.user.id);
       } else {
         setUserId(null);
         applyLocalLanguage();
