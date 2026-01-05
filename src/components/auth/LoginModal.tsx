@@ -19,25 +19,6 @@ type LoginModalProps = {
   onClose?: () => void;
 };
 
-const resolveRestoreRedirect = () => {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin.replace(/\/$/, "")}/auth/callback?next=/restore-password`;
-  }
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  if (siteUrl) {
-    return `${siteUrl.replace(/\/$/, "")}/auth/callback?next=/restore-password`;
-  }
-
-  const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL ?? "";
-  if (vercelUrl) {
-    const origin = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
-    return `${origin.replace(/\/$/, "")}/auth/callback?next=/restore-password`;
-  }
-
-  return undefined;
-};
-
 export default function LoginModal({ onClose }: LoginModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -80,7 +61,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
 
     try {
       if (mode === "forgot") {
-        const redirectTo = resolveRestoreRedirect();
+        const redirectTo = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL + "/restore-password";        
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: redirectTo ?? undefined,
         });
@@ -90,6 +71,8 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         }
 
         setSuccessMessage(copy.success.reset);
+        setLoading(false);
+        return; // <--- importante, evita que siga y haga signInWithPassword
       }
 
       if (mode === "register") {

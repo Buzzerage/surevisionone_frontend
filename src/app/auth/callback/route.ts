@@ -1,21 +1,30 @@
 import { NextResponse } from "next/server";
-// The client you created from the Server-Side Auth instructions
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url);
-    const code = searchParams.get("code");
-    // if "next" is in param, use it as the redirect URL
-    const next = searchParams.get("next") ?? "/panel";
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
 
-    if (code) {
-        const supabase = await createSupabaseServerClient();
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-            return NextResponse.redirect(`${origin}${next}`);
-        }
+  const code = searchParams.get("code");
+  const type = searchParams.get("type");
+  const next = searchParams.get("next") ?? "/panel";
+
+  const supabase = await createSupabaseServerClient();
+
+  // 🔹 LOGIN / OAUTH / MAGIC LINK (PKCE)
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(`${url.origin}${next}`);
     }
+  }
 
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  // 🔹 PASSWORD RECOVERY
+  if (type === "recovery") {
+    // Supabase ya ha puesto la sesión en cookies
+    return NextResponse.redirect(`${url.origin}${next}`);
+  }
+
+  // 🔻 Cualquier otro caso es error real
+  return NextResponse.redirect(`${url.origin}/auth/auth-code-error`);
 }

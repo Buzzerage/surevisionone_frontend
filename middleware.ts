@@ -3,9 +3,10 @@ import { createSupabaseMiddlewareClient } from "@/lib/supabase/server-client";
 
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
+  const pathname = url.pathname;
 
-  // 🔥 Evita interferir en callbacks de Supabase
-  if (url.pathname.startsWith("/auth")) {
+  // 🔥 No interferir con callbacks de Supabase
+  if (pathname.startsWith("/auth")) {
     return NextResponse.next();
   }
 
@@ -13,13 +14,21 @@ export async function middleware(req: NextRequest) {
   const supabase = createSupabaseMiddlewareClient(req, res);
 
   const { data } = await supabase.auth.getUser();
+  const recoveryCookie = req.cookies.get("sv-recovery-session")?.value === "1";
 
-  const recoveryCookie = req.cookies.get("sv-recovery-session");
-  if (recoveryCookie?.value === "1") {
-    return NextResponse.redirect(new URL("/restore-password", req.url));
+  // 🔐 Sesión recovery: solo puede acceder a restore-password
+  if (recoveryCookie) {
+    if (pathname !== "/restore-password") {
+      return NextResponse.redirect(new URL("/restore-password", req.url));
+    }
+    return res;
   }
 
-  if (!data?.user) {
+  // 🔒 Rutas protegidas (panel, profile, etc.)
+  const isProtected =
+    pathname.startsWith("/panel") || pathname.startsWith("/profile");
+
+  if (isProtected && !data?.user) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
@@ -27,5 +36,9 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/panel/:path*", "/profile/:path*"],
+  matcher: [
+    "/panel/:path*",
+    "/profile/:path*",
+    "/restore-password",
+  ],
 };

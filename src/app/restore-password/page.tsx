@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Lock } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/browser-client";
-import { clearRecoverySessionMark } from "@/lib/supabase/recoverySessionCookie";
 import { useAppTranslations } from "@/lib/i18n";
 
 export default function RestorePasswordPage() {
@@ -21,14 +20,25 @@ export default function RestorePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"verifying" | "ready">("verifying");
 
-  // 1️⃣ La sesión debe estar lista gracias al middleware/callback
+  // 1️⃣ Verificar que Supabase haya creado sesión desde el link de recovery
   useEffect(() => {
-    // Si no hay sesión tras un breve periodo, el AuthGuard o la pantalla mostrarán error
-    // Pero con PKCE, al llegar aquí ya deberíamos tener cookies.
-    setPhase("ready");
-  }, []);
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
 
-  // 2️⃣ Enviar nueva contraseña
+      if (error || !data.session) {
+        setError(restoreCopy.invalid);
+        setPhase("ready");
+        return;
+      }
+
+      document.cookie = "sv-recovery-session=1; path=/; SameSite=Lax";
+      setPhase("ready");
+    };
+
+    checkSession();
+  }, [restoreCopy]);
+
+  // 2️⃣ Enviar nueva contraseña (la sesión ya existe)
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -57,55 +67,35 @@ export default function RestorePasswordPage() {
     setLoading(true);
 
     try {
-      const { data, error: updateError } = await supabase.auth.updateUser({ password });
-
-      console.log("[restore-password] updateUser response:", data, updateError);
-
-      if (updateError) {
-        throw updateError;
-      }
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
 
       setSuccess(restoreCopy.success);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+      document.cookie = "sv-recovery-session=; path=/; Max-Age=0";
+      await supabase.auth.signOut();
+
+      setTimeout(() => {
+        router.replace("/");
+      }, 1500);
     } catch (err: any) {
       console.error("[restore-password] updateUser failed:", err);
-
-      if (err?.name === "AuthSessionMissingError") {
-        setError(restoreCopy.unauthorized);
-      } else if (typeof err?.message === "string" && err.message.length > 0) {
-        setError(err.message);
-      } else {
-        setError(restoreCopy.genericError);
-      }
+      setError(err?.message || restoreCopy.genericError);
     } finally {
-      console.log("[restore-password] forcing session refresh…");
-
-      // Sign out old session, but don't wait
-      supabase.auth.signOut({ scope: "global" })
-        .catch(err => console.warn("SignOut global failed", err));
-
-      // Attempt silent session refresh to ensure stability
-      supabase.auth.refreshSession()
-        .catch(err => console.warn("refreshSession failed", err));
-
-      // After success: force-auth panel load
-      setTimeout(() => {
-        router.replace("/panel");
-      }, 300);
-
       setLoading(false);
-      clearRecoverySessionMark();
     }
-
   };
 
-  // 3️⃣ UI
   return (
     <div className="min-h-screen bg-[var(--color-background-primary)] text-[var(--color-text-primary)]">
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-md rounded-3xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-8 shadow-[0_40px_80px_-45px_var(--color-card-glow)]">
-          <h1 className="text-2xl font-bold text-[var(--color-text-accent)]">{restoreCopy.title}</h1>
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{restoreCopy.subtitle}</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-accent)]">
+            {restoreCopy.title}
+          </h1>
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+            {restoreCopy.subtitle}
+          </p>
 
           {phase === "verifying" ? (
             <div className="mt-8 flex flex-col items-center gap-3 text-sm text-[var(--color-text-secondary)]">
@@ -163,7 +153,7 @@ export default function RestorePasswordPage() {
                 disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-accent-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {restoreCopy.submit}
               </button>
 
