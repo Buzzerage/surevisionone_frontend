@@ -61,7 +61,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
 
     try {
       if (mode === "forgot") {
-        const redirectTo = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL + "/restore-password";        
+        const redirectTo = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL + "/restore-password";
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: redirectTo ?? undefined,
         });
@@ -126,16 +126,14 @@ export default function LoginModal({ onClose }: LoginModalProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${
-        visible ? "bg-black/60 backdrop-blur-sm opacity-100" : "opacity-0 pointer-events-none"
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${visible ? "bg-black/60 backdrop-blur-sm opacity-100" : "opacity-0 pointer-events-none"
+        }`}
       onClick={handleClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-md rounded-2xl shadow-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-8 transform transition-all duration-300 ease-out ${
-          visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"
-        }`}
+        className={`relative w-full max-w-md rounded-2xl shadow-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-8 transform transition-all duration-300 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"
+          }`}
       >
         <button
           onClick={handleClose}
@@ -215,11 +213,10 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                           key={region}
                           type="button"
                           onClick={() => setBettingRegion(region)}
-                          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${
-                            isActive
-                              ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
-                              : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
-                          }`}
+                          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] ${isActive
+                            ? "border-[var(--color-accent-primary)] bg-[var(--color-background-secondary)] text-[var(--color-text-accent)]"
+                            : "border-[var(--color-border)] bg-[var(--color-background-secondary)]/60 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)]"
+                            }`}
                           aria-label={copy.regionOptions[region]}
                         >
                           <span className="flex flex-col items-center gap-1">

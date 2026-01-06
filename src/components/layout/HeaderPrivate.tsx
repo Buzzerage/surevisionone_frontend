@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, Grid } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
 
@@ -61,6 +61,18 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
 
             {openMenu && (
               <div className="absolute right-0 mt-2 w-44 bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-xl shadow-lg overflow-hidden animate-fadeIn">
+                {/* Botón para ir al Panel (nuevo, primero) */}
+                <button
+                  onClick={() => {
+                    setOpenMenu(false);
+                    router.push("/panel");
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--color-hover-bg)] transition"
+                >
+                  <Grid className="w-4 h-4" /> Panel
+                </button>
+
+                {/* Botón de Configuración */}
                 <button
                   onClick={() => {
                     setOpenMenu(false);
@@ -71,6 +83,7 @@ export default function HeaderPrivate({ session }: HeaderPrivateProps) {
                   <Settings className="w-4 h-4" /> {copy.settings}
                 </button>
 
+                {/* Botón de Cerrar Sesión */}
                 <button
                   onClick={() => {
                     setOpenMenu(false);

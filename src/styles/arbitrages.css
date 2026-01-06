@@ -1,17 +1,23 @@
 /* RESET & GLOBALES */
 /* ---------------------------------- */
-*, *::before, *::after { box-sizing: border-box; }
-html { 
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; 
-    -webkit-font-smoothing: antialiased; 
-    -moz-osx-font-smoothing: grayscale; 
-    -webkit-text-size-adjust: 100%; 
-    transition: background-color 0.3s ease, color 0.3s ease; 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
-body { 
-    margin: 0; 
-    background-color: var(--color-background-primary); 
-    color: var(--color-text-primary); 
+
+html {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+    margin: 0;
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
     min-height: 100vh;
 }
 
@@ -20,35 +26,35 @@ body {
 /* ---------------------------------- */
 
 /* 1. Cabecera Fija (AppHeader) */
-.app-header { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    right: 0; 
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     height: var(--header-height);
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 0 1.5rem; 
-    background-color: var(--color-header-background); 
-    backdrop-filter: blur(10px); 
-    -webkit-backdrop-filter: blur(10px); 
-    border-bottom: 1px solid var(--color-border); 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1.5rem;
+    background-color: var(--color-header-background);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-border);
     z-index: 1000;
 }
 
 /* 2. Layout Principal */
-.main-layout { 
-    display: flex; 
+.main-layout {
+    display: flex;
     min-height: 100vh;
     margin: 0 auto;
     max-width: 1400px;
-    background-color: var(--color-background-primary); 
+    background-color: var(--color-background-primary);
     padding-top: var(--header-height);
 }
 
 /* 3. Área de Contenido */
-.content-area { 
+.content-area {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -99,16 +105,21 @@ body {
     border-radius: 0;
     padding: 1.5rem 1rem;
     height: calc(100vh - var(--header-height));
-    position: sticky; 
-    top: var(--header-height); 
-    border-right: 1px solid var(--color-border); 
+    position: sticky;
+    top: var(--header-height);
+    border-right: 1px solid var(--color-border);
     overflow-y: auto;
     transition: transform 0.3s ease-out;
 }
 
 /* Ocultar el botón de alternancia en escritorio */
-.sport-filter-toggle { display: none; }
-.main-nav { display: block; }
+.sport-filter-toggle {
+    display: none;
+}
+
+.main-nav {
+    display: block;
+}
 
 /* Breakpoint para Tablet/Móvil (hasta 992px) */
 @media (max-width: 992px) {
@@ -213,12 +224,21 @@ body {
 /* --- ESTILOS DE COMPONENTES --- */
 
 /* Header & Nav */
-.header-left, .header-right { 
-    display: flex; 
-    align-items: center; /* ⬅️ Esto es clave y ya lo tenías, ¡genial! */
-    gap: 1rem; 
+.header-left,
+.header-right {
+    display: flex;
+    align-items: center;
+    /* ⬅️ Esto es clave y ya lo tenías, ¡genial! */
+    gap: 1rem;
 }
-.app-logo { font-size: 1.6rem; font-weight: 800; margin: 0; color: var(--color-text-accent); }
+
+.app-logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--color-text-accent);
+}
+
 .theme-toggle-button {
     position: relative;
     display: inline-flex;
@@ -235,6 +255,7 @@ body {
     transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease, background 0.25s ease;
     box-shadow: 0 6px 16px var(--color-card-glow);
 }
+
 .theme-toggle-button::after {
     content: "";
     position: absolute;
@@ -245,24 +266,50 @@ body {
     transition: opacity 0.25s ease;
     pointer-events: none;
 }
+
 .theme-toggle-button:hover {
     transform: translateY(-2px);
     color: #ffffff;
     background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
     box-shadow: 0 12px 28px rgba(2, 132, 199, 0.25);
 }
+
 .theme-toggle-button:hover::after {
     opacity: 0.4;
 }
+
 .theme-toggle-button:focus-visible {
     outline: 3px solid var(--color-accent-primary);
     outline-offset: 3px;
 }
 
-.nav-list { display: flex; gap: 1.5rem; list-style: none; margin: 0; padding: 0; }
-.nav-link { color: var(--color-text-secondary); text-decoration: none; font-weight: 600; font-size: 0.95rem; padding: 0.5rem 0; position: relative; border-bottom: 2px solid transparent; transition: color 0.2s ease, border-color 0.2s ease; }
-.nav-link:hover { color: var(--color-text-primary); }
-.nav-link--active { color: var(--color-accent-primary); border-bottom-color: var(--color-accent-primary); }
+.nav-list {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-link {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.5rem 0;
+    position: relative;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-link:hover {
+    color: var(--color-text-primary);
+}
+
+.nav-link--active {
+    color: var(--color-accent-primary);
+    border-bottom-color: var(--color-accent-primary);
+}
 
 /* Bank sidebar */
 .bank-sidebar__header {
@@ -424,6 +471,7 @@ body {
 .bank-sidebar__close svg {
     font-size: 1.3rem;
 }
+
 .filters-toolbar__body {
     display: flex;
     flex-direction: column;
@@ -699,8 +747,19 @@ body {
 }
 
 /* Match & Cards */
-.arbitrage-panel { display: flex; flex-direction: column; gap: 1.5rem; }
-.panel-title { font-size: 1.5rem; color: var(--color-text-accent); margin: 0; padding-bottom: 0.5rem; border-bottom: 2px solid var(--color-border); }
+.arbitrage-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.panel-title {
+    font-size: 1.5rem;
+    color: var(--color-text-accent);
+    margin: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-border);
+}
 
 .match-container {
     display: flex;
@@ -708,29 +767,34 @@ body {
     /* AUMENTO DE SEPARACIÓN ENTRE GRUPOS DE PARTIDOS */
     gap: 1rem;
 }
+
 /* Vista en cascada para ordenación por rentabilidad */
 .match-stream {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
 }
+
 .match-stream__item {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
+
 .match-stream__card {
     display: flex;
 }
+
 .match-stream__card .arb-card {
     width: 100%;
 }
+
 /* NUEVO: Contenedor para la lista de tarjetas de arbitraje */
 .arb-list-container {
     display: flex;
     flex-direction: column;
     /* Separación entre tarjetas individuales */
-    gap: 0.75rem; 
+    gap: 0.75rem;
 }
 
 .match-header {
@@ -820,43 +884,58 @@ body {
     }
 }
 
-.arb-card { 
-    background: var(--color-card-bg); 
-    border: 1px solid var(--color-border); 
-    border-radius: 0.9rem; 
-    padding: 0.75rem; 
-    box-shadow: 0 10px 20px var(--color-shadow); 
-    transition: transform 220ms ease, box-shadow 220ms ease; 
+.arb-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 0.9rem;
+    padding: 0.75rem;
+    box-shadow: 0 10px 20px var(--color-shadow);
+    transition: transform 220ms ease, box-shadow 220ms ease;
 }
-.arb-card:hover { 
-    transform: translateY(-4px); 
-    box-shadow: 0 15px 30px var(--color-shadow); 
+
+.arb-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 30px var(--color-shadow);
 }
 
 /* Header de la tarjeta de arbitraje (arriba) */
-.arb-card-header { 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    padding-bottom: 0.5rem; 
-    border-bottom: 1px solid var(--color-border); 
-    margin-bottom: 0.75rem; /* Añadir margen inferior aquí */
+.arb-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 0.75rem;
+    /* Añadir margen inferior aquí */
 }
-.arb-left { display: flex; gap: 0.5rem; align-items: center; }
-.arb-date { font-size: 0.78rem; color: var(--color-text-secondary); font-weight: 600; }
+
+.arb-left {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.arb-date {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+}
 
 /* AJUSTE CRÍTICO: Grid para las Bet Cards dentro de una ArbitrageCard */
-.arb-grid { 
-    display: grid; 
-    grid-template-columns: 1fr; /* Por defecto: siempre una columna en cualquier tamaño si no se especifica más */
-    gap: 0.6rem; 
+.arb-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    /* Por defecto: siempre una columna en cualquier tamaño si no se especifica más */
+    gap: 0.6rem;
     /* Eliminado el margin-top de aquí, ya que el header tiene margin-bottom */
 }
 
-@media (min-width: 768px) { /* Tablet y superior */
+@media (min-width: 768px) {
+
+    /* Tablet y superior */
     /* Para Back vs Lay y Back vs Back, usar 2 columnas si el ancho lo permite */
-    .arb-grid { 
-        grid-template-columns: repeat(2, 1fr); 
+    .arb-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -866,20 +945,20 @@ body {
 
 
 /* Bet Info */
-.bet-card { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 0.35rem; 
-    padding: 0.75rem; 
-    border-radius: 0.6rem; 
-    background: var(--color-background-primary); 
-    border: 1px solid var(--color-border); 
+.bet-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.75rem;
+    border-radius: 0.6rem;
+    background: var(--color-background-primary);
+    border: 1px solid var(--color-border);
 }
 
 /* Header de la Bet Card */
 .bet-header {
     display: flex;
-    justify-content: space-between; 
+    justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
     min-height: 2.2rem;
@@ -890,31 +969,37 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex-grow: 1; 
-    min-width: 0; 
+    flex-grow: 1;
+    min-width: 0;
     /* AJUSTE CRÍTICO: Reducir max-width o quitar para que flex-grow funcione mejor */
     /* Lo quitamos y dejamos que flex-grow haga su trabajo, junto con min-width: 0 */
-    /* max-width: 60%; */ 
+    /* max-width: 60%; */
 }
 
 /* Título (nombre del equipo/jugador) */
-.bet-title { 
-    color: var(--color-text-accent); 
+.bet-title {
+    color: var(--color-text-accent);
     font-size: 1rem;
     font-weight: 600;
-    white-space: nowrap; 
+    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    text-overflow: ellipsis;
     /* AJUSTE: Eliminar margin-right que puede empujar si no hay suficiente espacio */
-    /* margin-right: 0.5rem; */ 
+    /* margin-right: 0.5rem; */
 }
-.bet-icon{ font-weight:900; font-size:1rem; line-height:1; }
+
+.bet-icon {
+    font-weight: 900;
+    font-size: 1rem;
+    line-height: 1;
+}
+
 .bet-meta {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex-shrink: 0; 
-    white-space: nowrap; 
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* Cuota (Odds) */
@@ -922,64 +1007,188 @@ body {
     font-size: 1.2rem;
     font-weight: 900;
     line-height: 1;
-    background:linear-gradient(90deg,#7dd3fc,var(--color-accent-primary));
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
+    background: linear-gradient(90deg, #7dd3fc, var(--color-accent-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     background-size: 200% 100%;
     animation: odds-glow 18s ease-in-out infinite;
 }
-.bet-odds::selection{ -webkit-text-fill-color: inherit; color: inherit; }
+
+.bet-odds::selection {
+    -webkit-text-fill-color: inherit;
+    color: inherit;
+}
 
 @keyframes odds-glow {
     0% {
         background-position: -150% 0;
     }
+
     50% {
         background-position: 0% 0;
     }
+
     100% {
         background-position: 150% 0;
     }
 }
-.type-tag{ font-size:0.72rem; font-weight:700; padding:0.18rem 0.5rem; border-radius:999px; color:white; }
-.type-back{ background:linear-gradient(90deg,var(--color-accent-primary),#0ea5b5); }
-.type-lay{ background:linear-gradient(90deg,var(--color-accent-secondary),#f472b6); }
 
-.bet-footer{ 
-    display:flex; 
-    flex-wrap:wrap; 
-    align-items: center; 
-    justify-content: space-between; 
-    gap: 0.5rem 1rem; 
-    padding-top:0.5rem; 
-    border-top: 1px solid var(--color-border);
-    font-size:0.86rem; color: var(--color-text-secondary); 
+.type-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    color: white;
 }
-.bookmaker-pill { background-color: var(--color-background-tertiary); color: var(--color-text-primary); padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-.stake-value { color: var(--color-green-text); font-weight: 900; }
-.liability-value { color: var(--color-red-text); font-weight: 900; }
-.bet-icon-back { color: var(--color-accent-primary); }
-.bet-icon-lay { color: var(--color-accent-secondary); }
+
+.type-back {
+    background: linear-gradient(90deg, var(--color-accent-primary), #0ea5b5);
+}
+
+.type-lay {
+    background: linear-gradient(90deg, var(--color-accent-secondary), #f472b6);
+}
+
+.bet-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.86rem;
+    color: var(--color-text-secondary);
+}
+
+.bookmaker-pill {
+    background-color: var(--color-background-tertiary);
+    color: var(--color-text-primary);
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stake-value {
+    color: var(--color-green-text);
+    font-weight: 900;
+}
+
+.liability-value {
+    color: var(--color-red-text);
+    font-weight: 900;
+}
+
+.bet-icon-back {
+    color: var(--color-accent-primary);
+}
+
+.bet-icon-lay {
+    color: var(--color-accent-secondary);
+}
 
 /* --- BADGES (Colores consistentes con variables) --- */
-.profit-badge{ padding:0.125rem 0.5rem; font-size:0.75rem; font-weight:800; border-radius:999px; }
-/* Dark Mode */
-.profit-high{ background: var(--color-success-surface); color: var(--color-success-text); border:1px solid var(--color-success-border); }
-.profit-medium{ background: var(--color-warning-surface); color: var(--color-warning-text); border:1px solid var(--color-warning-border); }
-.profit-low{ background: var(--color-danger-surface); color: var(--color-danger-text); border:1px solid var(--color-danger-border); }
-.new-badge{
-    padding:0.12rem 0.45rem; font-size:0.75rem; font-weight:800; border-radius:999px; 
-    background: rgba(79,70,229,0.12); color: #c7d2fe; border:1px solid rgba(99,102,241,0.22); 
-    animation: pulse 2.2s ease-in-out infinite; 
+.profit-badge {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border-radius: 999px;
 }
-.no-arbs-message{ text-align:center; color: var(--color-text-secondary); margin-top:1.5rem; font-size:1rem; }
+
+/* Dark Mode */
+.profit-high {
+    background: var(--color-success-surface);
+    color: var(--color-success-text);
+    border: 1px solid var(--color-success-border);
+}
+
+.profit-medium {
+    background: var(--color-warning-surface);
+    color: var(--color-warning-text);
+    border: 1px solid var(--color-warning-border);
+}
+
+.profit-low {
+    background: var(--color-danger-surface);
+    color: var(--color-danger-text);
+    border: 1px solid var(--color-danger-border);
+}
+
+.new-badge {
+    padding: 0.12rem 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border-radius: 999px;
+    background: rgba(79, 70, 229, 0.12);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    animation: pulse 2.2s ease-in-out infinite;
+}
+
+.no-arbs-message {
+    text-align: center;
+    color: var(--color-text-secondary);
+    margin-top: 1.5rem;
+    font-size: 1rem;
+}
 
 /* --- ANIMACIONES --- */
-@keyframes fadeIn { from{ opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
-.fade-in{ animation: fadeIn 360ms cubic-bezier(.2,.9,.3,1) both; }
-@keyframes pulse{ 0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(99,102,241,0.18); } 50%{ transform:scale(1.03); box-shadow:0 0 0 8px rgba(99,102,241,0.02); } 100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(99,102,241,0); } }
-@keyframes shimmer{ 0%{ background-position: -200% 0; } 100%{ background-position: 200% 0; } }
-@media (prefers-reduced-motion: reduce){ .fade-in, .new-badge, .bet-odds { animation: none !important; } * { transition: none !important; } }
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px)
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+.fade-in {
+    animation: fadeIn 360ms cubic-bezier(.2, .9, .3, 1) both;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.18);
+    }
+
+    50% {
+        transform: scale(1.03);
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.02);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .fade-in,
+    .new-badge,
+    .bet-odds {
+        animation: none !important;
+    }
+
+    * {
+        transition: none !important;
+    }
+}
 
 /* ---------------------------------- */
 /* ESTADO DE CARGA Y ANIMACIONES LIMPIAS */
@@ -987,100 +1196,100 @@ body {
 
 /* Loader giratorio minimalista (usado en botones o pequeños elementos) */
 .loader {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.15);
-  border-top-color: var(--color-accent-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto;
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: var(--color-accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ---------------------------------- */
 /* TARJETAS DE CARGA (PLACEHOLDERS) */
 /* ---------------------------------- */
 .loading-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
-  margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-top: 2rem;
 }
 
 .loading-card {
-  position: relative;
-  background: var(--color-card-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  box-shadow: 0 6px 18px var(--color-shadow);
-  overflow: hidden;
+    position: relative;
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    box-shadow: 0 6px 18px var(--color-shadow);
+    overflow: hidden;
 }
 
 .loading-bar {
-  height: 0.85rem;
-  border-radius: 0.5rem;
-  background: linear-gradient(
-    100deg,
-    var(--color-background-secondary) 30%,
-    rgba(255, 255, 255, 0.05) 40%,
-    var(--color-background-secondary) 70%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.6s infinite linear;
-  margin-bottom: 0.75rem;
+    height: 0.85rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(100deg,
+            var(--color-background-secondary) 30%,
+            rgba(255, 255, 255, 0.05) 40%,
+            var(--color-background-secondary) 70%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite linear;
+    margin-bottom: 0.75rem;
 }
 
 .loading-bar:last-child {
-  margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 /* ✨ Efecto shimmer */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 /* ---------------------------------- */
 /* ANIMACIÓN DE ENTRADA (GENÉRICA) */
 /* ---------------------------------- */
 .fade-in {
-  animation: fadeIn 0.35s ease-in-out both;
+    animation: fadeIn 0.35s ease-in-out both;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ---------------------------------- */
 /* TEXTO Y CONTENEDOR DE ESTADO VACÍO */
 /* ---------------------------------- */
 .loading-wrapper {
-  text-align: center;
-  margin-top: 3rem;
-  color: var(--color-text-secondary);
+    text-align: center;
+    margin-top: 3rem;
+    color: var(--color-text-secondary);
 }
 
 .loading-wrapper h2 {
-  font-size: 1.2rem;
-  color: var(--color-text-accent);
-  margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    color: var(--color-text-accent);
+    margin-bottom: 1.5rem;
 }
 
 /* ---------------------------------- */
@@ -1088,82 +1297,84 @@ body {
 /* ---------------------------------- */
 
 .loading-overlay {
-  position: fixed;
-  top: var(--header-height);
-  left: 0;
-  width: 100%;
-  height: calc(100vh - var(--header-height));
-  background: rgba(15, 23, 42, 0.6); /* semitransparente */
-  backdrop-filter: blur(4px); /* desenfoque elegante */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  opacity: 1;
-  transition: opacity 0.3s ease-in-out;
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    width: 100%;
+    height: calc(100vh - var(--header-height));
+    background: rgba(15, 23, 42, 0.6);
+    /* semitransparente */
+    backdrop-filter: blur(4px);
+    /* desenfoque elegante */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
 }
 
 /* Estado inicial (fade-in) */
 .loading-overlay.fade-in {
-  opacity: 1;
+    opacity: 1;
 }
 
 /* Estado de salida (fade-out) */
 .loading-overlay.fade-out {
-  opacity: 0;
-  pointer-events: none; /* Evita bloquear clics al desvanecerse */
+    opacity: 0;
+    pointer-events: none;
+    /* Evita bloquear clics al desvanecerse */
 }
 
 /* Título */
 .loading-overlay h2 {
-  color: var(--color-text-accent);
-  margin-bottom: 1.5rem;
-  font-size: 1.1rem;
-  text-align: center;
+    color: var(--color-text-accent);
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    text-align: center;
 }
 
 /* Tarjetas de carga */
 .loading-overlay .loading-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.2rem;
-  max-width: 1000px;
-  width: 100%;
-  padding: 0 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.2rem;
+    max-width: 1000px;
+    width: 100%;
+    padding: 0 2rem;
 }
 
 .loading-overlay .loading-card {
-  position: relative;
-  background: var(--color-card-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
+    position: relative;
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
 }
 
 .loading-overlay .loading-bar {
-  height: 0.8rem;
-  border-radius: 0.5rem;
-  background: linear-gradient(
-    100deg,
-    var(--color-background-secondary) 30%,
-    rgba(255, 255, 255, 0.08) 45%,
-    var(--color-background-secondary) 70%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.6s infinite linear;
-  margin-bottom: 0.6rem;
+    height: 0.8rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(100deg,
+            var(--color-background-secondary) 30%,
+            rgba(255, 255, 255, 0.08) 45%,
+            var(--color-background-secondary) 70%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite linear;
+    margin-bottom: 0.6rem;
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -150px 0;
-  }
-  100% {
-    background-position: 150px 0;
-  }
+    0% {
+        background-position: -150px 0;
+    }
+
+    100% {
+        background-position: 150px 0;
+    }
 }
 
 /* --------------------------------------------------------- */
@@ -1171,39 +1382,55 @@ body {
 /* --------------------------------------------------------- */
 
 @keyframes fadePulseNew {
-  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
-  70%  { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
 }
 
 @keyframes fadePulseUpdated {
-  0%   { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); }
-  70%  { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(250, 204, 21, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+    }
 }
 
 /* Mantener el fondo estable */
 .highlight-new,
 .highlight-updated {
-  background-color: var(--color-card-bg) !important;
+    background-color: var(--color-card-bg) !important;
 }
 
 
 .highlight-new {
-  animation: fadePulseNew 1.4s ease-in-out;
+    animation: fadePulseNew 1.4s ease-in-out;
 }
 
 .highlight-updated {
-  animation: fadePulseUpdated 1.4s ease-in-out;
+    animation: fadePulseUpdated 1.4s ease-in-out;
 }
 
 .arbitrage-card {
-  transition: all 0.25s ease;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  padding: 1rem;
-  background: var(--color-card-bg);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    transition: all 0.25s ease;
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    padding: 1rem;
+    background: var(--color-card-bg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 /* ------------------------------------------- */
@@ -1211,51 +1438,73 @@ body {
 /* ------------------------------------------- */
 
 @keyframes fadePulseNew {
-  0%   { background-color: rgba(34, 197, 94, 0.3); }  /* verde */
-  100% { background-color: transparent; }
+    0% {
+        background-color: rgba(34, 197, 94, 0.3);
+    }
+
+    /* verde */
+    100% {
+        background-color: transparent;
+    }
 }
 
 @keyframes fadePulseUpdated {
-  0%   { background-color: rgba(250, 204, 21, 0.3); } /* amarillo */
-  100% { background-color: transparent; }
+    0% {
+        background-color: rgba(250, 204, 21, 0.3);
+    }
+
+    /* amarillo */
+    100% {
+        background-color: transparent;
+    }
 }
 
 /* 💥 Animación de entrada “slide-in bounce” */
 @keyframes slideInBounce {
-  0% {
-    opacity: 0;
-    transform: translateY(25px) scale(0.97);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-6px) scale(1.02);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
+    0% {
+        opacity: 0;
+        transform: translateY(25px) scale(0.97);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-6px) scale(1.02);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+    }
 }
 
 /* ✨ Pulsación suave para actualizaciones */
 @keyframes pulseFade {
-  0% { background-color: rgba(250, 204, 21, 0.25); }
-  50% { background-color: rgba(250, 204, 21, 0.1); }
-  100% { background-color: transparent; }
+    0% {
+        background-color: rgba(250, 204, 21, 0.25);
+    }
+
+    50% {
+        background-color: rgba(250, 204, 21, 0.1);
+    }
+
+    100% {
+        background-color: transparent;
+    }
 }
 
 /* Asignación de animaciones */
 .highlight-new {
-  animation: fadePulseNew 1s ease-in-out, slideInBounce 0.6s ease;
+    animation: fadePulseNew 1s ease-in-out, slideInBounce 0.6s ease;
 }
 
 .highlight-updated {
-  animation: fadePulseUpdated 1.5s ease-in-out, pulseFade 2s ease-in-out;
+    animation: fadePulseUpdated 1.5s ease-in-out, pulseFade 2s ease-in-out;
 }
 
 /* Base card transition */
 .arb-card {
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  border-radius: 1rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-card-bg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    border-radius: 1rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-card-bg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
