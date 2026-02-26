@@ -24,8 +24,8 @@ const createServerInstance = async (): Promise<SupabaseClient> => {
       getAll() {
         return cookieStore.getAll().map(({ name, value }) => ({ name, value }));
       },
-      setAll(cookiesToSet: any) {
-        cookiesToSet.forEach(({ name, value, options }: any) => {
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+        cookiesToSet.forEach(({ name, value, options }) => {
           cookieStore.set({ name, value, ...options });
         });
       },
@@ -46,12 +46,12 @@ export const createSupabaseMiddlewareClient = (
       getAll() {
         return req.cookies.getAll().map(({ name, value }) => ({ name, value }));
       },
-      setAll(cookiesToSet: any) {
-        cookiesToSet.forEach(({ name, value }: any) => {
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+        cookiesToSet.forEach(({ name, value }) => {
           req.cookies.set(name, value);
         });
 
-        cookiesToSet.forEach(({ name, value, options }: any) => {
+        cookiesToSet.forEach(({ name, value, options }) => {
           res.cookies.set({ name, value, ...options });
         });
       },

@@ -78,7 +78,7 @@ export default function RestorePasswordPage() {
       setTimeout(() => {
         router.replace("/");
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[restore-password] updateUser failed:", err);
       setError(err?.message || restoreCopy.genericError);
     } finally {
