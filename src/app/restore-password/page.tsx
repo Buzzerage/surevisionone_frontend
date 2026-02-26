@@ -80,7 +80,8 @@ export default function RestorePasswordPage() {
       }, 1500);
     } catch (err: unknown) {
       console.error("[restore-password] updateUser failed:", err);
-      setError(err.message || restoreCopy.genericError);
+    
+      setError(err instanceof Error ? err.message : restoreCopy.genericError);
     } finally {
       setLoading(false);
     }
