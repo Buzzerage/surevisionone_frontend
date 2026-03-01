@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 
+// Use the edge runtime so the callback runs inside a Worker instance.
+// Next.js defaults to the Node runtime for `app` routes, which isn’t
+// compatible with Cloudflare. By exporting `runtime = 'edge'`, the build
+// produces a Worker that can be deployed by Pages.
+export const runtime = "edge";
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const searchParams = url.searchParams;

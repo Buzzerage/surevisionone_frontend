@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs";
+// Cloudflare Pages always runs API routes on the edge runtime (Workers).
+// Explicitly request the edge runtime so Next.js doesn’t try to bundle
+// Node‑specific helpers. The nodejs runtime is not supported by Workers.
+export const runtime = "edge"; // previously "nodejs"
 
 type DeleteAccountRequestBody = {
   userId?: string;
